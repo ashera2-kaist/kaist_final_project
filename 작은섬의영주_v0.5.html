@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>눈 떠 보니 섬 영주 v0.5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root{
+    --night:#0B1526; --deep:#12233B;
+    --paper:#F3E6C8; --paper-2:#E3D2A8; --paper-3:#C9B383;
+    --ink:#22190F; --ink-2:#6A5636;
+    --gold:#F2C14E; --gold-2:#B98A1F;
+    --grain:#B9CF5C; --heart:#F27A8A;
+    --good:#3E9E5E; --bad:#C63B2E;
+    --px:'Press Start 2P',monospace;
+    --head:'Black Han Sans','Noto Sans KR',sans-serif;
+    --body:'Noto Sans KR',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;padding:0}
+  body{background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;display:flex;justify-content:center;align-items:stretch;overflow:hidden;
+    background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:24px 24px}
+  .app{width:100vw;height:100vh;max-width:none;padding:0;display:block;overflow:hidden}
+  .screen{width:100%;height:100%;overflow:hidden}
+  .screen[hidden]{display:none!important}
+  h1,h2,h3{font-family:var(--head);font-weight:400;margin:0;line-height:1.2;text-wrap:balance;letter-spacing:.01em}
+  button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;border-radius:0}
+  button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .num{font-family:var(--px);font-size:.8em;letter-spacing:0}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+  .px-box{border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55)}
+  .shake{animation:shake .6s}
+  @keyframes shake{10%,50%,90%{transform:translate(-4px,2px)}30%,70%{transform:translate(4px,-2px)}}
+
+  /* ── VN 프레임 ── */
+  :root{ --game-width:960px; }
+  #s-play{max-width:var(--game-width);margin:0 auto;width:100%;height:100vh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;position:relative;overflow:hidden;gap:0}
+  #s-play .hud{background:linear-gradient(180deg,#11263d,#0b1526);color:#edf6f9;padding:10px 12px;border:3px solid #2b3f5e;box-shadow:4px 4px 0 rgba(0,0,0,.55);border-radius:0;width:100%;max-width:var(--game-width);margin:0 auto;grid-row:1}
+  #s-play .scene{display:none}
+  .screen#s-play>.hud,.screen#s-play>#panel,.screen#s-play>.slots{max-width:var(--game-width);width:100%;margin:0 auto}
+  .vn-shell{display:flex;flex-direction:column;gap:12px;width:min(100%,780px);max-height:52vh;overflow:auto;padding:8px 0;margin:0 auto;pointer-events:auto;scrollbar-width:none}
+  .vn-shell::-webkit-scrollbar{display:none}
+  .vn-topbar{display:flex;align-items:center;justify-content:space-between;border:3px solid var(--ink);background:rgba(11,21,38,.88);padding:8px 12px;color:#edf6f9;box-shadow:4px 4px 0 rgba(0,0,0,.55);font-family:var(--px);font-size:10px;text-transform:uppercase;letter-spacing:1px}
+  .vn-topbar .left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .vn-topbar .right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .vn-pill{padding:4px 8px;border:2px solid #4a6785;background:#18314c;color:#fff}
+  .vn-pill.gold{background:#8d6a17;color:#fff6dd;border-color:#d7ab3a}
+  .vn-scene{position:relative;border:3px solid var(--ink);background:#000;box-shadow:4px 4px 0 rgba(0,0,0,.55);overflow:hidden;min-height:300px}
+  .vn-scene canvas{width:100%;height:auto;display:block;aspect-ratio:16/9;image-rendering:pixelated}
+  .vn-scene .label{position:absolute;left:12px;top:10px;font-family:var(--px);font-size:10px;color:#f8f0db;text-shadow:2px 2px 0 #000;background:rgba(0,0,0,.28);padding:4px 6px;border:2px solid rgba(255,255,255,.2)}
+  .vn-scene .scene-name{position:absolute;right:12px;top:10px;font-family:var(--head);font-size:20px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.8)}
+  .vn-scene-wrap{position:relative;border:3px solid var(--ink);background:#000;box-shadow:4px 4px 0 rgba(0,0,0,.55);overflow:hidden;height:clamp(420px,54vh,560px);min-height:420px;flex:0 0 auto}
+  .vn-scene-wrap canvas{width:100%;height:100%;display:block;aspect-ratio:16/9;image-rendering:pixelated;object-fit:cover}
+  .vn-scene-wrap .label{position:absolute;left:12px;top:10px;font-family:var(--px);font-size:10px;color:#f8f0db;text-shadow:2px 2px 0 #000;background:rgba(0,0,0,.28);padding:4px 6px;border:2px solid rgba(255,255,255,.2)}
+  .vn-scene-wrap .scene-name{position:absolute;right:12px;top:10px;font-family:var(--head);font-size:20px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.8)}
+  .vn-dialogue{background:linear-gradient(180deg,#f5ebd0,#d9bf80);border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);padding:14px 18px 12px;min-height:130px}
+  .vn-speaker{font-family:var(--px);font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-2);margin-bottom:8px;line-height:1.3}
+  .vn-dialogue p{margin:0;font-size:18px;line-height:1.7;color:var(--ink);font-weight:500}
+  .vn-caret{margin-top:10px;text-align:right;font-family:var(--px);font-size:10px;color:var(--ink-2);letter-spacing:2px}
+  .vn-choices{display:flex;flex-direction:column;gap:10px}
+  .vn-choices .choice{background:#fdf8ef;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(25,20,12,.45);padding:12px 16px;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;background-image:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.02));}
+  .vn-choices .choice:hover:not(:disabled){background:#fff2c7;transform:translate(-2px,-2px);box-shadow:6px 6px 0 rgba(25,20,12,.45)}
+  .vn-choices .choice:active:not(:disabled){transform:translate(1px,1px);box-shadow:2px 2px 0 rgba(25,20,12,.45)}
+  .vn-choices .choice b{display:block;font-family:var(--head);font-size:20px;line-height:1.2;letter-spacing:.02em}
+  .vn-choices .choice small{display:block;font-size:13px;color:var(--ink-2);margin-top:4px}
+  .vn-result-action{padding:10px 0 0}
+
+  /* ── HUD ── */
+  .hud{background:linear-gradient(180deg,#12233b,#0b1526);color:#E8EEF0;padding:10px;display:flex;flex-direction:column;gap:8px;border:3px solid #2B3F5E;box-shadow:4px 4px 0 rgba(0,0,0,.55)}
+  .seasons{display:flex;align-items:center;gap:5px;font-size:12px;color:#8FA6BE}
+  .seasons b{font-family:var(--px);font-size:11px;color:#fff;margin-right:6px}
+  .seasons span{padding:3px 7px;border:2px solid #2B3F5E}
+  .seasons span.now{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:700}
+  .gauges{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .g{background:#0B1526;border:2px solid #2B3F5E;padding:7px 8px;display:flex;flex-direction:column;gap:4px}
+  .g small{font-size:10px;letter-spacing:.1em;color:#8FA6BE}
+  .g b{font-family:var(--px);font-size:15px;font-weight:400;display:flex;align-items:baseline;gap:4px}
+  .g b i{font-style:normal;font-size:10px;color:#8FA6BE;font-family:var(--body)}
+  .g.gold b{color:var(--gold)} .g.grain b{color:var(--grain)} .g.trust b{color:var(--heart);font-size:13px;letter-spacing:2px}
+  .g.bump b{animation:bump .5s}
+  @keyframes bump{30%{transform:scale(1.18)}}
+  .herobar{display:flex;align-items:center;gap:10px;background:#0B1526;border:2px solid #2B3F5E;padding:6px 8px}
+  .herobar canvas{width:40px;height:40px;flex:0 0 auto;background:#1B2E4A;border:2px solid #2B3F5E}
+  .herobar .who{flex:1;min-width:0;font-size:12px;color:#8FA6BE;line-height:1.35}
+  .herobar .who b{display:block;color:#fff;font-size:14px;font-family:var(--head);font-weight:400}
+  .ult{flex:0 0 auto;padding:8px 10px;background:#C63B2E;color:#fff;font-family:var(--head);font-size:14px;border:2px solid #fff;box-shadow:3px 3px 0 #000}
+  .ult:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
+  .ult.used{background:#3A4657;border-color:#5A6A80;color:#8FA6BE}
+  .toast{background:var(--gold);color:var(--ink);padding:8px 12px;font-size:14px;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);display:none}
+  .toast.on{display:block;animation:pop .4s}
+  @keyframes pop{40%{transform:scale(1.03)}}
+
+  /* ── 섬 씬 ── */
+  .scene{border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);background:#000;line-height:0;position:relative}
+  .scene canvas{width:100%;height:auto;display:block}
+  .scene .cap{position:absolute;left:8px;top:6px;font-family:var(--px);font-size:9px;color:#fff;text-shadow:2px 2px 0 #000}
+  .scene .cap2{position:absolute;right:8px;top:6px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000;font-weight:700}
+  .slots{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;position:relative;left:auto;right:auto;bottom:auto;z-index:6;pointer-events:none;margin:0 auto;width:100%;max-width:var(--game-width);padding:0 0 6px;grid-row:3;align-self:end}
+  .slot{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:#8FA6BE;text-align:center;line-height:1.1;pointer-events:auto}
+  .slot canvas{width:100%;max-width:44px;aspect-ratio:1;background:#12233B;border:2px solid #2B3F5E;opacity:.35;filter:grayscale(1)}
+  .slot.built{color:#fff}
+  .slot.built canvas{opacity:1;filter:none;border-color:var(--gold)}
+  .slot.new canvas{animation:pop .5s}
+
+  /* ── 패널 ── */
+  .panel{background:var(--paper);padding:16px 16px 18px;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);border-top-width:8px}
+  #panel{position:relative;left:auto;right:auto;bottom:auto;z-index:8;padding:0;pointer-events:none;width:100%;max-width:var(--game-width);margin:0 auto;display:flex;align-items:stretch;grid-row:2;min-height:0}
+  .vn-stage{position:relative;width:100%;max-width:var(--game-width);margin:0 auto;pointer-events:auto;display:flex;flex-direction:column;gap:10px;flex:1 1 auto;min-height:0}
+  .vn-stage .vn-scene-wrap{position:relative;border:3px solid var(--ink);background:#000;box-shadow:4px 4px 0 rgba(0,0,0,.55);overflow:hidden;height:clamp(420px,54vh,560px);min-height:420px;flex:0 0 auto}
+  .vn-stage .vn-scene-wrap canvas{width:100%;height:100%;display:block;aspect-ratio:16/9;image-rendering:pixelated;object-fit:cover}
+  .vn-stage .vn-dark-overlay{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none;z-index:10}
+  .vn-stage .vn-dark-overlay.active{display:block}
+  .vn-stage .vn-forecast,.vn-stage .vn-advice{position:absolute;left:12px;right:12px;top:12px;z-index:30;background:rgba(245,235,208,.96);border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.5);padding:10px 12px;display:none;width:50%;max-width:50%;min-width:240px}
+  .vn-stage .vn-forecast.active,.vn-stage .vn-advice.active{display:block}
+  .vn-stage .vn-forecast b,.vn-stage .vn-advice b{display:block;font-family:var(--px);font-size:10px;letter-spacing:1px;margin-bottom:4px;color:var(--ink-2)}
+  .vn-stage .vn-forecast{font-size:15px;line-height:1.5;font-weight:700}
+  .vn-stage .vn-advice{display:none;align-items:center;gap:10px;font-size:14px;line-height:1.5}
+  .vn-stage .vn-advice.active{display:flex}
+  .vn-stage .vn-advice .vn-advice-portrait{width:34px;height:34px;flex:0 0 34px;border:2px solid var(--ink);background:#12233B;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .vn-stage .vn-advice .vn-advice-portrait canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+  .vn-stage .vn-advice .vn-advice-copy{flex:1;min-width:0}
+  .vn-stage .vn-advice b{margin:0 0 4px}
+  .vn-stage .vn-advice p{margin:0}
+  .vn-stage .vn-dialogue-box{position:absolute;left:4%;right:4%;bottom:4%;background:linear-gradient(180deg,#f5ebd0,#d9bf80);border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);padding:18px 22px 16px;z-index:20;min-height:190px;max-height:52%;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+  .vn-stage .vn-dialogue-box.hidden{display:none}
+  .vn-stage .vn-dialogue-box .vn-speaker{font-family:var(--px);font-size:16px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-2);margin-bottom:0;line-height:1.3;font-weight:800}
+  .vn-stage .vn-dialogue-box p{margin:0;font-size:20px;line-height:1.8;color:var(--ink);font-weight:500}
+  .vn-stage .vn-dialogue-box .vn-result-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap;width:100%}
+  .vn-stage .vn-dialogue-box .vn-result-footer .vn-effect-box{display:inline-block;margin-top:0;background:rgba(255,247,222,.8);border:2px solid var(--ink);padding:10px 12px;box-shadow:3px 3px 0 rgba(0,0,0,.25);max-width:100%;flex:1 1 auto;min-width:0}
+  .vn-stage .vn-dialogue-box .vn-result-footer .vn-confirm-wrap{margin-top:0;margin-left:auto;flex:0 0 auto;text-align:right}
+  .vn-stage .vn-confirm{display:inline-flex;align-items:center;justify-content:center;margin-top:0;padding:8px 12px;background:var(--gold);color:var(--ink);font-family:var(--head);font-size:18px;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);cursor:pointer;white-space:nowrap}
+  .vn-stage .vn-effect-box{display:inline-block;margin-top:14px;background:rgba(255,247,222,.8);border:2px solid var(--ink);padding:10px 12px;box-shadow:3px 3px 0 rgba(0,0,0,.25);max-width:100%}
+  .vn-stage .vn-effect-box.compact{max-width:220px}
+  .vn-stage .vn-effect-box.medium{max-width:340px}
+  .vn-stage .vn-effect-box.wide{max-width:100%}
+  .vn-stage .vn-effect-box b{display:block;font-family:var(--px);font-size:12px;letter-spacing:1px;color:var(--ink-2);margin-bottom:8px;font-weight:800}
+  .vn-stage .vn-effect-box .effects{display:flex;flex-wrap:wrap;gap:8px}
+  .vn-stage .vn-effect-box .effect{display:inline-flex;align-items:center;padding:4px 8px;border:2px solid var(--ink);background:#fff8e8;font-size:14px;line-height:1.3}
+  .vn-stage .vn-effect-box .effect.good{color:#2d6a4f}
+  .vn-stage .vn-effect-box .effect.bad{color:#9d2f2f}
+  .vn-stage .vn-effect-box .effect.zero{color:var(--ink-2)}
+  .vn-stage .vn-choice-box{position:absolute;left:6%;right:6%;bottom:5%;z-index:20;display:none;flex-direction:column;gap:10px;max-height:70%;overflow-y:auto;overflow-x:hidden;padding-right:8px;scrollbar-width:thin;scrollbar-color:#8f6a2a #f5ebd0}
+  .vn-stage .vn-choice-box::-webkit-scrollbar{width:8px}
+  .vn-stage .vn-choice-box::-webkit-scrollbar-thumb{background:#8f6a2a;border-radius:4px;border:2px solid #f5ebd0}
+  .vn-stage .vn-choice-box.active{display:flex}
+  .vn-stage .vn-choice-box .choice{display:block;text-align:left;padding:12px 14px;background:#fdf8ef;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(25,20,12,.45);font-size:16px;line-height:1.35;min-height:48px;flex-shrink:0}
+  .vn-stage .vn-choice-box .choice small{display:block;margin-top:4px;font-size:13px;color:var(--ink-2)}
+  .vn-stage .vn-choice-box .choice:disabled{opacity:.5;cursor:not-allowed}
+  .vn-stage .vn-choice-box .choice.adv{border-style:dashed}
+  .vn-stage .vn-confirm{display:inline-flex;align-items:center;justify-content:center;margin-top:10px;padding:8px 12px;background:var(--gold);color:var(--ink);font-family:var(--head);font-size:18px;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);cursor:pointer}
+  .vn-stage .vn-confirm-wrap{text-align:right}
+  .panel.spring{border-top-color:#7FB24A}.panel.summer{border-top-color:#F2A33A}.panel.autumn{border-top-color:#D0622A}.panel.winter{border-top-color:#7FA2C4}
+  .eyebrow{font-family:var(--px);font-size:9px;letter-spacing:0;color:var(--ink-2)}
+  .panel h2{font-size:24px;margin-top:6px}
+  .story{margin:10px 0 0;font-size:16px}
+  .forecast{margin-top:12px;background:#FFF7DE;border:2px solid var(--ink);padding:10px 12px;font-size:14.5px}
+  .forecast b{display:block;font-family:var(--px);font-size:8px;color:#4F6F86;margin-bottom:4px}
+  .choices{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .choice{text-align:left;padding:12px 14px;background:#FFFBEE;color:var(--ink);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--paper-3);line-height:1.35;display:flex;flex-direction:column;gap:3px}
+  .choice:hover:not(:disabled){background:#FFF1BF}
+  .choice:active:not(:disabled){transform:translate(2px,2px);box-shadow:1px 1px 0 var(--paper-3)}
+  .choice b{font-weight:700}
+  .choice small{color:var(--ink-2);font-size:13px}
+  .build{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .b{background:#FFFBEE;border:2px solid var(--ink);padding:10px 12px;display:grid;grid-template-columns:44px 1fr;gap:10px}
+  .b canvas{width:44px;height:44px;background:#12233B;border:2px solid var(--ink)}
+  .b .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .b .head b{font-family:var(--head);font-weight:400;font-size:17px}
+  .b .head .cost{color:var(--gold-2);font-family:var(--px);font-size:11px}
+  .b .head .cost s{color:var(--ink-2);margin-right:4px}
+  .b p{margin:3px 0 0;font-size:13px;color:var(--ink-2)}
+  .b .pay{display:flex;gap:6px;margin-top:8px}
+  .b .pay button{flex:1;padding:7px;font-size:13px;background:var(--paper-2);color:var(--ink);border:2px solid var(--ink)}
+  .b .pay button.credit{background:#F4D5DA;color:#7A2C3D}
+  .b .pay button.free{background:var(--gold)}
+  .ledger{margin-top:12px;font-size:13.5px;background:var(--paper-2);border:2px solid var(--ink);padding:10px 12px}
+  .ledger b{display:block;font-family:var(--px);font-size:8px;color:var(--ink-2);margin-bottom:6px}
+  .ledger div{display:flex;justify-content:space-between}
+  .outcome{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+  .line{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#FFFBEE;border:2px solid var(--paper-3);font-size:15px}
+  .line .d{font-family:var(--px);font-size:13px}
+  .line .d.good{color:var(--good)}.line .d.bad{color:var(--bad)}.line .d.zero{color:var(--ink-2)}
+  .note{margin-top:12px;font-size:14.5px;color:var(--ink-2);background:var(--paper-2);border:2px solid var(--paper-3);padding:10px 12px}
+  .primary{width:100%;margin-top:16px;padding:14px;background:var(--gold);color:var(--ink);font-family:var(--head);font-size:19px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+  .primary:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+  .ghost{width:100%;margin-top:8px;padding:10px;background:transparent;color:var(--ink-2);font-size:14px;text-decoration:underline;text-underline-offset:4px}
+  .danger{color:var(--bad);font-weight:700}
+
+  /* ── 시작 / 캐릭터 선택 / 결과 ── */
+  .hero{background:var(--paper);padding:22px 18px 18px;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55)}
+  #s-start, #s-birth, #s-select, #s-end{display:flex;align-items:center;justify-content:center;padding:24px}
+  #s-start .hero, #s-birth .hero, #s-select .hero, #s-end .hero{max-width:980px;width:min(100%,980px);max-height:calc(100vh - 48px);overflow:auto}
+  .hero h1{font-size:34px}
+  .hero .lore{margin:12px 0 0;font-size:16px;max-width:36ch}
+  .hero .lore+.lore{margin-top:8px}
+  .select{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .hc{display:grid;grid-template-columns:72px 1fr;gap:12px;background:#FFFBEE;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--paper-3);padding:12px;text-align:left;color:var(--ink);align-items:start}
+  .hc:hover{background:#FFF1BF}
+  .hc:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--paper-3)}
+  .hc canvas{width:72px;height:72px;background:#12233B;border:3px solid var(--ink)}
+  .hc b{font-family:var(--head);font-weight:400;font-size:19px;display:block}
+  .hc small{display:block;color:var(--ink-2);font-size:12px;margin-bottom:6px}
+  .hc .ab{font-size:13.5px;line-height:1.4}
+  .hc .ab span{display:inline-block;font-family:var(--px);font-size:8px;padding:2px 5px;border:2px solid var(--ink);margin-right:5px;vertical-align:middle}
+  .hc .ab .u{background:#C63B2E;color:#fff;border-color:#C63B2E}
+  .grade{display:flex;align-items:baseline;gap:10px;margin-top:8px}
+  .grade b{font-family:var(--px);font-size:22px;color:var(--gold-2)}
+  .grade span{color:var(--ink-2);font-size:14px}
+  .timeline{margin-top:14px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+  .timeline div{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:6px 0;border-bottom:2px dotted var(--paper-3)}
+  .timeline div small{color:var(--ink-2);font-size:12px}
+  .map{margin-top:18px}
+  .map h3{font-size:18px}
+  .advice{display:grid;grid-template-columns:36px 1fr;gap:10px;align-items:center;margin:12px 0 2px;background:#FFF7DE;border:2px dashed var(--ink);padding:8px 10px}
+  .advice canvas{width:36px;height:36px;background:#12233B;border:2px solid var(--ink);image-rendering:pixelated}
+  .advice p{margin:0;font-size:14.5px}
+  .choice.adv{border-style:dashed}
+  .choice.adv b::after{content:" 💬";font-size:13px}
+  .persona{margin-top:18px}
+  .persona h3{margin:0}
+  .persona>p{margin:4px 0 10px;font-size:14px;color:var(--ink-2)}
+  .pbar{display:grid;grid-template-columns:86px 1fr 86px 34px;gap:6px;align-items:center;font-size:13px;margin:6px 0}
+  .pbar .pl{text-align:right;color:var(--ink-2)}.pbar .pr{color:var(--ink-2)}
+  .pbar .on{color:var(--ink);font-weight:700}
+  .pbar .pt{position:relative;height:14px;background:#FFFBEE;border:2px solid var(--ink)}
+  .pbar .pt i{position:absolute;top:0;bottom:0;background:var(--gold)}
+  .pbar .pt i.neg{background:#6FA8C7}
+  .pbar .pt b{position:absolute;left:50%;top:-4px;bottom:-4px;width:2px;background:var(--ink)}
+  .pbar small{color:var(--ink-2);font-size:11px}
+  .ptype{display:grid;grid-template-columns:56px 1fr;gap:12px;margin-top:12px;background:#FFFBEE;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--paper-3);padding:12px}
+  .ptype .pe{font-size:40px;line-height:1;text-align:center}
+  .ptype small{color:var(--ink-2);font-size:12px}
+  .ptype b{display:block;font-family:var(--head);font-size:20px;margin:2px 0 4px}
+  .ptype p{margin:3px 0;font-size:14px}
+  .ptype .blur{color:var(--ink-2);font-size:12.5px}
+  .pnote{margin:8px 0 0;font-size:12.5px;color:var(--ink-2)}
+  .map p{margin:4px 0 12px;font-size:14px;color:var(--ink-2)}
+  .map .row{display:grid;grid-template-columns:1fr 24px 1fr;gap:6px;align-items:center;padding:9px 0;border-bottom:2px dotted var(--paper-3);font-size:14px}
+  .map .row .isl{font-weight:700}
+  .map .row .arr{color:var(--gold-2);text-align:center;font-family:var(--px);font-size:10px}
+  .map .row .real small{display:block;color:var(--ink-2);font-size:12.5px}
+  .heroeval{margin-top:14px;display:grid;grid-template-columns:56px 1fr;gap:10px;align-items:center;background:#FFFBEE;border:2px solid var(--ink);padding:10px}
+  .heroeval canvas{width:56px;height:56px;background:#12233B;border:2px solid var(--ink)}
+  .heroeval p{margin:0;font-size:14px}
+  .end .hero{border-top:10px solid var(--bad)}
+  @media (prefers-reduced-motion:reduce){.g.bump b,.slot.new canvas,.toast.on,.shake{animation:none}}
+
+  /* v0.3.1 */
+  .deckinfo{margin-top:12px;font-size:13px;color:var(--ink-2);background:var(--paper-2);border:2px dashed var(--paper-3);padding:8px 10px}
+  .deckinfo b{color:var(--ink)}
+  .row2{display:flex;gap:8px}
+  .row2 .primary{margin-top:10px}
+  .secondary{width:100%;margin-top:10px;padding:12px;background:#FFFBEE;color:var(--ink);font-family:var(--head);font-size:16px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--paper-3)}
+  .filepick{display:block;margin-top:10px;font-size:12.5px;color:var(--ink-2);text-align:center;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .filepick input{display:none}
+  .seasons em.demo{margin-left:auto;font-style:normal;font-family:var(--px);font-size:8px;background:#C63B2E;color:#fff;padding:3px 5px}
+  .guide{margin-top:18px}
+  .guide details{background:#FFFBEE;border:2px solid var(--ink);padding:10px 12px}
+  .guide summary{cursor:pointer;font-weight:700;font-size:14px}
+  .guide .gc{padding:8px 0;border-bottom:2px dotted var(--paper-3);font-size:13.5px}
+  .guide .gc b{display:block}.guide .gc span{font-size:12px;color:var(--ink-2)}.guide .gc p{margin:4px 0 0}
+  /* v0.4 */
+  .sub{font-size:16px;margin-top:16px}
+  .b.bet{grid-template-columns:44px 1fr}
+  .bemoji{width:44px;height:44px;display:grid;place-items:center;font-size:24px;background:#12233B;border:2px solid var(--ink)}
+  .tl{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;background:#4F6F86;padding:1px 6px;border:2px solid var(--ink);white-space:nowrap}
+  .choice small .tl{margin-left:4px}
+  .panel.watch{border-top-color:#4F6F86;background:#E7E2D2}
+  .note.lock{background:#DCE6EE;border-color:#4F6F86}
+  .memory{margin-top:10px;font-size:14px;background:#EFE3FA;border:2px dashed #7A5A9A;padding:8px 10px;color:#4A3563}
+  .seasons em.life{margin-left:auto;font-style:normal;font-size:11px;color:var(--gold)}
+  .meta{margin-top:12px;font-size:14px;background:#FFFBEE;border:2px solid var(--ink);padding:10px 12px}
+  .dice{font-size:88px;line-height:1;text-align:center;margin:10px 0 0}
+  .bstats{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .bstats span{background:#FFFBEE;border:2px solid var(--ink);padding:4px 8px;font-size:13.5px}
+  #worth{margin-top:16px} #worth h3{font-size:18px} #worth p{margin:4px 0 10px;font-size:13.5px;color:var(--ink-2)}
+  .wbar{display:grid;grid-template-columns:62px 1fr 40px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+  .wb{position:relative;height:16px;background:var(--paper-2);border:2px solid var(--ink)}
+  .wb i{position:absolute;top:0;bottom:0;left:0}
+  .wb i.have{background:var(--good)} .wb i.debt{background:var(--bad);opacity:.85}
+  .wlegend{font-size:12px;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+  .wlegend i{display:inline-block;width:12px;height:10px;border:1px solid var(--ink)} .wlegend i.have{background:var(--good)} .wlegend i.debt{background:var(--bad)}
+
+  /* 오프닝 인트로: 영상 + 버튼만 노출 */
+  .intro-gate{width:100%;max-width:960px;margin:24px auto;padding:0 12px 24px;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+  .intro-stage{border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);background:#000;aspect-ratio:16/9;overflow:hidden}
+  .intro-stage iframe{width:100%;height:100%;border:0;display:block}
+  .intro-actions{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px}
+  .intro-play,.intro-skip{width:100%;padding:14px 18px;background:var(--gold);color:var(--ink);font-family:var(--head);font-size:22px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);cursor:pointer}
+  .intro-skip{background:#EDE6D7;color:var(--ink)}
+  .intro-play:disabled,.intro-skip:disabled{opacity:.7;cursor:not-allowed}
+  .intro-play:active:not(:disabled),.intro-skip:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+  #intro-gate[hidden]{display:none!important}
+  #game-app[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="intro-gate" class="intro-gate">
+  <div class="intro-stage">
+    <iframe id="intro-frame" src="망한 섬의 영주 애니메틱.html?embed=1&v=20261001" title="오프닝 애니메틱" loading="eager" allow="autoplay"></iframe>
+  </div>
+  <div class="intro-actions">
+    <button id="intro-play" class="intro-play" type="button">튜토리얼 재생</button>
+    <button id="intro-skip" class="intro-skip" type="button">튜토리얼 스킵</button>
+  </div>
+</div>
+
+<div class="app" id="game-app" hidden>
+  <section class="screen" id="s-start">
+    <div class="hero">
+      <div class="eyebrow">ISLAND LORD · v0.5</div>
+      <h1>눈 떠 보니, 망한 섬의 열두 살 영주?</h1>
+      <p class="lore">분명 어제까지는 평범한 초등학생이었는데… 눈을 떠 보니 낯선 섬, 낡은 항구, 텅 빈 금고. 사람들이 나를 "영주님"이라고 불러요. 이 섬 식구들을 먹여 살리는 건 이제 나예요.</p>
+      <p class="lore"><b>2년을 버티고 영지를 키우세요.</b> 목표에 못 미치면 다시 다른 집안에서 눈을 떠요. 금화도 건물도 사라지지만, <b>겪은 일은 기억으로 남아요.</b></p>
+      <div class="meta" id="meta-info"></div>
+      <button class="primary" id="btn-start">눈을 뜬다</button>
+      <button class="secondary" id="btn-demo" hidden>시연 모드 — 한 생 · 약 5분 · 순서 고정</button>
+      <button class="ghost" id="btn-reset" hidden>전생 기억 모두 지우기</button>
+      <div class="deckinfo" id="deck-info">카드를 불러오는 중…</div>
+      <label class="filepick">카드 JSON 파일 직접 불러오기 (선생님·팀원용)<input type="file" id="file" accept=".json,application/json"></label>
+    </div>
+  </section>
+
+  <section class="screen" id="s-birth" hidden>
+    <div class="hero">
+      <div class="eyebrow">WHERE WERE YOU BORN?</div>
+      <div class="dice" id="dice">⚂</div>
+      <h1 id="birth-name"></h1>
+      <p class="lore" id="birth-text"></p>
+      <div class="bstats" id="birth-stats"></div>
+      <div class="meta" id="birth-goal"></div>
+      <button class="primary" id="btn-birth">해변으로 나가 보기</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-select" hidden>
+    <div class="hero">
+      <div class="eyebrow">CHOOSE YOUR ALLY</div>
+      <h1>해변에 누가 떠내려왔어요</h1>
+      <p class="lore">어디선가 본 듯한 세 사람. 한 명만 곁에 둘 수 있어요. 각자 잘하는 게 하나, 그리고 딱 한 번 쓸 수 있는 필살기가 있어요.</p>
+      <div class="select" id="select"></div>
+      <p class="lore" id="pool-info" style="font-size:13px;color:var(--ink-2)"></p>
+    </div>
+  </section>
+
+  <section class="screen" id="s-play" hidden>
+    <div class="hud">
+      <div class="seasons" id="seasons"></div>
+      <div class="gauges">
+        <div class="g gold" id="g-gold"><small>금화</small><b><span id="v-gold">30</span><i>닢</i></b></div>
+        <div class="g grain" id="g-grain"><small>곡식</small><b><span id="v-grain">30</span><i>/<span id="v-cap">40</span></i></b></div>
+        <div class="g trust" id="g-trust"><small>길드 신뢰</small><b id="v-trust"></b></div>
+      </div>
+      <div class="herobar"><canvas id="hero-face" width="16" height="16"></canvas><div class="who" id="hero-who"></div><button class="ult" id="btn-ult"></button></div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div id="panel"></div>
+    <div class="slots" id="slots"></div>
+    <div class="scene"><canvas id="scene" width="160" height="72"></canvas><div class="cap" id="scene-cap"></div><div class="cap2" id="scene-note"></div></div>
+  </section>
+
+  <section class="screen" id="s-end" hidden>
+    <div class="hero" id="end-hero">
+      <div class="eyebrow" id="end-eyebrow">CHRONICLE</div>
+      <h1 id="end-title"></h1>
+      <div class="grade"><b id="end-score"></b><span id="end-sub"></span></div>
+      <p class="lore" id="end-lore"></p>
+      <div id="compare"></div>
+      <div id="worth"></div>
+      <div id="persona"></div>
+      <div class="heroeval"><canvas id="end-face" width="16" height="16"></canvas><p id="end-heroeval"></p></div>
+      <div class="timeline" id="timeline"></div>
+      <div class="map">
+        <h3>이번 생에 있었던 일, 현실에서는</h3>
+        <p>게임에서는 이름을 붙이지 않았어요. 네가 겪은 일은 사실 이런 것들이었어요.</p>
+        <div id="map-rows"></div>
+      </div>
+      <div class="guide" id="guide"></div>
+      <button class="primary" id="btn-again">다시</button>
+    </div>
+  </section>
+</div>
+
+<script src="data/cards_bundle.js"></script>
+<script>
+/*<ENGINE>*/
+/* ============================================================
+   ① 규칙 엔진 — DOM을 쓰지 않는다. 게임 화면과 밸런스 시뮬레이터(tools/sim.js)가
+      이 블록을 똑같이 쓴다. 수치는 CFG, 카드 문구·효과는 data/*.json에서만 고친다.
+   ============================================================ */
+const CFG = { gold:30, grain:30, trust:3, years:2, winterFood:12, capBase:40, capWarehouse:90,
+  forecastAcc:0.75, harvest:20, field2:15, tax:10, market:8, limitPerTrust:10, lateFee:0.10, cardsPerSummer:1, scoreNetDebt:true,
+  lockOn:true, goals:[0,55,75],
+  personaBias:{r:-0.26,t:0.11,j:0} };
+// v0.5: personaBias — 신호 1개당 기준점. 카드 은행이 원래 '안정·미래' 쪽으로 기울어 있어서(무작위로 눌러도 위험 −0.26/개, 시간 +0.11/개),
+//   유형을 정할 때 합계에서 (기준점 × 신호 수)를 뺀다. 지금 값은 무작위 봇 기준(tools/sim05_persona.js) — 파일럿 후 실제 아이들 평균으로 교체
+// v0.4: scoreNetDebt — 영지 가치 = 가진 것 − 빚 (정의서 2절 섬 가치표)
+// lockOn — 결과가 나중에 오는 '걸기' 선택은 몇 계절을 손 못 대고 지켜본다(시간 잠금). 확률이 낮을수록 길다
+// years — v0.4 환생 모드는 한 생 2년(8계절). 3년 고정은 정의서 9절 '결정 완료'였으므로 팀 재합의 필요 — 3으로 바꾸면 v0.3 길이
+// goals — 회차(단계)별 목표 영지 가치: 1단계 살아남기, 2단계 55, 3단계 75 (2년 기준. 3년이면 0/80/110 권장)
+
+/* 항구 게시판 — 봄에 짓는 대신 금화를 걸 수 있다. 수익이 클수록 오래 지켜봐야 한다(그동안 짓기·손님·곡식 판매 불가)
+   lock: 봄 다음부터 손을 못 대는 계절 수. back: 돌아오는 해(0=올가을, 1=내년 가을) */
+const BETS = [
+  { id:'vault',    name:'길드 금고에 맡기기', emoji:'🏦', lock:2, p:1.0, mul:1.2, back:0, desc:'확실하게 조금 늘어나요.',
+    win:'길드 금고에서 {stake}닢이 {amt}닢이 되어 돌아왔어요.', lose:'' },
+  { id:'ship',     name:'먼바다 무역선',     emoji:'⛵', lock:3, p:0.5, mul:2.5, back:0, hero:{sunsin:1}, desc:'돌아오면 크게 늘어요. 안 돌아올 수도 있어요.',
+    win:'무역선이 돌아왔어요! {stake}닢이 {amt}닢이 되었어요.', lose:'무역선은 돌아오지 않았어요. {stake}닢을 잃었어요.' },
+  { id:'treasure', name:'보물섬 원정대',     emoji:'🗺️', lock:5, p:0.3, mul:4.0, back:1, desc:'아주 크게 늘 수도 있어요. 아주 오래 걸려요.',
+    win:'원정대가 보물 상자를 싣고 돌아왔어요! {stake}닢이 {amt}닢!', lose:'원정대는 빈손으로 돌아왔어요. {stake}닢이 사라졌어요.' },
+];
+
+/* 출발 주사위 — 환생할 때마다 새 집안에서 태어난다. trap은 화면에 안 보이는 함정 */
+const BIRTHS = [
+  { face:1, id:'debt',   name:'빚더미 영지',     gold:15, grain:25, trust:2, loan:20, text:'선대 영주가 길드에 진 빚 20닢이 장부에 그대로 남아 있어요.', trap:'시작부터 장부의 날 몫이 있어요' },
+  { face:2, id:'poor',   name:'가난한 어부의 섬', gold:15, grain:25, trust:2, text:'배 한 척과 그물 몇 개가 전부예요. 길드는 아직 이 섬을 잘 몰라요.', trap:'신뢰가 낮아 외상 얹는 몫이 25%' },
+  { face:3, id:'plain',  name:'평범한 섬',       gold:30, grain:30, trust:3, text:'밭 하나, 낡은 항구, 금화 30닢. 할아버지가 남긴 그대로예요.' },
+  { face:4, id:'barn',   name:'창고지기의 섬',   gold:15, grain:25, trust:3, built:['warehouse'], text:'할머니가 지은 튼튼한 곡물 창고가 있어요. 대신 금화가 적어요.' },
+  { face:5, id:'trader', name:'상인 집안의 섬',  gold:35, grain:20, trust:4, text:'길드에 아는 사람이 많아 믿음이 두터워요. 곡식은 좀 모자라요.', trap:'곡식이 적어 첫 겨울이 빠듯해요' },
+  { face:6, id:'rich',   name:'부유한 섬',       gold:50, grain:40, trust:3, tempt:3, text:'금고가 두둑해요. 소문을 듣고 온갖 장수들이 배를 대기 시작했어요.', trap:'유혹·사기 손님이 세 배로 자주 와요' },
+];
+const SEASON_NAMES = ['봄','여름','가을','겨울'];
+const SEASON_EN = ['SPRING','SUMMER','AUTUMN','WINTER'];
+
+const BUILDINGS = [
+  { id:'warehouse',  name:'곡물 창고', cost:20, effect:'곡식을 90섬까지 보관. 창고 없이 40섬을 넘기면 썩어요. 혹한도 막아요.', concept:'warehouse' },
+  { id:'breakwater', name:'방파제',   cost:25, effect:'태풍 피해를 크게 줄여요. 태풍이 안 오면 아무 일도 없지만요.', concept:'insurance' },
+  { id:'reservoir',  name:'저수지',   cost:15, effect:'여름 가뭄이 와도 가을 수확을 지켜요.', concept:'insurance' },
+  { id:'herb',       name:'약초방',   cost:15, effect:'역병이 돌아도 피해를 줄여요.', concept:'insurance' },
+  { id:'field2',     name:'건너편 밭', cost:20, effect:'수확 +15섬. 섬 반대편이라 한쪽이 망해도 다른 쪽은 남아요.', concept:'diversify' },
+  { id:'market',     name:'항구 시장', cost:20, effect:'매 가을 금화 +8닢. 섬의 벌이가 늘어요.', concept:'income' },
+];
+const B_NAME = Object.fromEntries(BUILDINGS.map(b=>[b.id,b.name]));
+
+const DISASTERS = {
+  storm:  { name:'태풍', emoji:'🌀', guard:'breakwater', hint:'어부들이 말해요. "올겨울 바람이 심상치 않아요."',
+            hit:{grain:-15,gold:-10}, saved:{grain:-4,gold:0},
+            textHit:'거대한 파도가 항구를 덮쳤어요. 곡식이 쓸려 가고, 부서진 배를 고치느라 금화가 들었어요.',
+            textSaved:'파도가 방파제에 부딪혀 부서졌어요. 곡식 몇 섬만 젖었을 뿐이에요.' },
+  plague: { name:'역병', emoji:'🤒', guard:'herb', hint:'이웃 섬에서 병이 돈다는 소문이 들려요.',
+            hit:{grain:-10,gold:-10}, saved:{grain:-3,gold:0},
+            textHit:'섬사람들이 앓아누웠어요. 일할 사람이 없어 곡식이 줄고, 약을 사느라 금화를 썼어요.',
+            textSaved:'약초방 덕에 병이 금방 잡혔어요. 곡식 몇 섬만 축났어요.' },
+  cold:   { name:'혹한', emoji:'❄️', guard:'warehouse', hint:'철새가 유난히 일찍 떠났어요. 추운 겨울이 올 거래요.',
+            hit:{grain:-12,gold:0}, saved:{grain:-3,gold:0},
+            textHit:'밖에 쌓아 둔 곡식이 얼고 눅눅해져 절반 가까이 버렸어요.',
+            textSaved:'창고 안 곡식은 멀쩡했어요. 조금만 상했을 뿐이에요.' },
+  calm:   { name:'평온', emoji:'🌙', guard:null, hint:'바다가 잔잔해요. 올겨울은 조용할 것 같아요.',
+            hit:{grain:0,gold:0}, saved:{grain:0,gold:0},
+            textHit:'조용한 겨울이었어요. 난롯가에서 이야기를 나누며 보냈어요.', textSaved:'' },
+};
+
+/* 규칙이 만드는 연대기 항목(매 판 겪을 수 있는 것). matrix = 커버리지 매트릭스의 개념 키 */
+const RULE_CONCEPTS = {
+  credit:      { matrix:'credit',      isl:'길드 장부에 외상을 올렸다', real:'신용카드 · 대출', sub:'지금 받고 나중에 갚기로 한 약속' },
+  installment: { matrix:'installment', isl:'여러 가을에 나눠 갚았다', real:'할부', sub:'부담은 나뉘지만 얹는 몫(이자)만큼 총액은 늘어요' },
+  interest:    { matrix:'credit',      isl:'빌린 것보다 더 얹어 갚았다', real:'이자', sub:'빌린 값. 신뢰가 높을수록 적게 얹어요' },
+  dueday:      { matrix:'dueday',      isl:'가을 장부의 날에 갚을 몫을 냈다', real:'결제일', sub:'정해진 날에 정해진 돈이 빠져나가요. 그날 금고가 비어 있으면 안 돼요' },
+  overdue:     { matrix:'overdue',     isl:'갚는 날 갚지 못했다', real:'연체', sub:'신뢰가 떨어지고, 다음 외상은 더 비싸지거나 거절돼요' },
+  trustup:     { matrix:'overdue',     isl:'약속대로 다 갚아 신뢰가 올랐다', real:'신용점수', sub:'갚은 기록이 쌓이면 다음엔 더 좋은 조건으로 빌려요' },
+  limit:       { matrix:'limit',       isl:'장부 한도가 모자라 외상을 못 했다', real:'신용 한도', sub:'믿음(신용)만큼만 빌릴 수 있어요' },
+  warehouse:   { matrix:'saving',      isl:'곡물 창고를 지었다', real:'저축 계좌 · 비상금', sub:'안전하게 모아 두는 곳. 없으면 돈이 새어 나가요' },
+  rot:         { matrix:'saving',      isl:'창고가 없어 곡식이 썩었다', real:'계획 없는 돈', sub:'모으는 곳이 없으면 있던 것도 사라져요' },
+  insurance:   { matrix:'insurance',   isl:'방파제 · 저수지 · 약초방을 지었다', real:'보험', sub:'재난이 오기 전에 내는 작은 비용. 안 오면 아깝지만, 오면 섬을 살려요' },
+  prepared:    { matrix:'info',        isl:'예보를 듣고 미리 대비했다', real:'위험 관리', sub:'위험은 막을 수 없지만 준비는 할 수 있어요' },
+  unprepared:  { matrix:'insurance',   isl:'대비 없이 재난을 맞았다', real:'무보험 · 비상금 없음', sub:'한 번의 사고가 몇 년치 벌이를 가져가요' },
+  diversify:   { matrix:'diversify',   isl:'건너편에 두 번째 밭을 지었다', real:'분산', sub:'한 바구니에 달걀을 다 담지 않기' },
+  income:      { matrix:'income',      isl:'항구 시장을 지었다', real:'수입을 늘리는 투자', sub:'벌이를 키우는 데 쓴 돈은 돌아와요' },
+  sell:        { matrix:'budget',      isl:'가을에 곡식을 얼마나 남길지 정했다', real:'예산', sub:'미래(겨울)를 위해 오늘 얼마를 남길지' },
+  starve:      { matrix:'budget',      isl:'곡식을 다 써 버렸다', real:'파산', sub:'남겨 두지 않으면 버틸 수 없어요' },
+  timelock:    { matrix:'liquidity',   isl:'크게 걸고 몇 계절을 손 못 대고 지켜봤다', real:'만기 · 묶인 돈', sub:'큰 수익을 노리면 그동안 다른 일에 손을 쓸 수 없어요' },
+  opportunity: { matrix:'opportunity', isl:'봄마다 건물 하나만 골랐다', real:'기회비용', sub:'하나를 고르면 다른 하나를 포기해요' },
+};
+
+/* 카드가 쓰는 개념 키 → 현실 이름 (연대기·매트릭스 공용) */
+const CONCEPT_META = {
+  saving:{real:'저축 · 비상금',sub:'쓰고 남은 게 아니라, 먼저 떼어 둔 것이 나를 지켜요'},
+  compound:{real:'이자 · 복리',sub:'늘어난 돈에 또 이자가 붙어요. 시간이 일을 해요'},
+  insurance:{real:'보험',sub:'작은 비용을 미리 내고 큰 손실을 나눠 져요'},
+  diversify:{real:'분산',sub:'한 바구니에 달걀을 다 담지 않기'},
+  credit:{real:'신용 · 대출',sub:'빚은 나중의 나와 한 약속. 이자는 빌린 값이에요'},
+  installment:{real:'할부',sub:'나눠 내면 한 번의 부담은 작지만 총액과 기간이 늘어요'},
+  dueday:{real:'결제일',sub:'정해진 날 돈이 빠져나가요. 그날 금고를 비워 두면 안 돼요'},
+  limit:{real:'신용 한도',sub:'믿음만큼만 빌릴 수 있어요. 한도는 내 돈이 아니에요'},
+  overdue:{real:'연체 · 신용점수',sub:'약속을 어긴 기록은 오래 남아요'},
+  opportunity:{real:'기회비용',sub:'하나를 고르면 다른 하나를 포기해요'},
+  needwant:{real:'필요 vs 욕구',sub:'갖고 싶은 것과 꼭 필요한 것은 달라요'},
+  budget:{real:'예산',sub:'쓰기 전에 미래 몫부터 정해요'},
+  income:{real:'소득 · 수입 늘리기',sub:'벌이를 키우는 데 쓴 돈은 돌아와요'},
+  riskreturn:{real:'위험과 수익',sub:'크게 벌 수 있는 곳은 크게 잃을 수도 있어요'},
+  liquidity:{real:'유동성 · 만기',sub:'묶인 돈은 급할 때 꺼내 쓸 수 없어요'},
+  scam:{real:'사기 예방',sub:'"무조건", "오늘만"은 의심부터'},
+  contract:{real:'계약 · 약관',sub:'작은 글씨까지 읽고 서명해요'},
+  inflation:{real:'물가',sub:'같은 돈으로 살 수 있는 양이 바뀌어요'},
+  tax:{real:'세금',sub:'함께 쓰는 것을 위해 버는 것의 일부를 내요'},
+  guarantee:{real:'보증',sub:'남의 약속을 대신 지겠다는 약속'},
+  compare:{real:'비교 구매',sub:'같은 물건도 파는 곳마다 값이 달라요'},
+  sharing:{real:'나눔 · 기부',sub:'나눈 것은 신뢰로 돌아오기도 해요'},
+  info:{real:'정보의 가치 · 예측',sub:'예보는 확률이에요. 알아보는 데 드는 비용도 가치가 있어요'},
+  reactive:{real:'사후 대응 비용',sub:'닥쳐서 막으면 미리 준비할 때보다 비싸요'},
+  correlation:{real:'상관 위험',sub:'한 사건이 여러 곳을 한꺼번에 흔들어요'},
+  networth:{real:'순자산',sub:'가진 것에서 빚을 뺀 것이 진짜 내 몫'},
+  revolving:{real:'리볼빙 (일부만 갚고 넘기기)',sub:'이번 달이 가벼워지는 대신 빚이 눈덩이처럼 커져요'},
+  cashadvance:{real:'현금서비스 · 카드론',sub:'카드로 돈을 빌리면 이자가 특히 비싸요'},
+  points:{real:'포인트 · 혜택',sub:'혜택을 받으려고 더 쓰면 손해예요'},
+  cardsafety:{real:'카드 분실 · 부정사용',sub:'잃어버리면 바로 신고. 늦을수록 내 책임이 커져요'},
+  debitcredit:{real:'체크카드 vs 신용카드',sub:'내 돈 안에서 쓰기 vs 빌려서 쓰기'},
+  fee:{real:'연회비 · 수수료',sub:'혜택보다 비용이 크면 손해예요'},
+};
+
+/* ── 난수: 게임은 Math.random, 시연·시뮬레이션은 시드 고정 ── */
+let RNG = Math.random;
+function setRng(f){ RNG = f; }
+function seeded(seed){ let a=seed>>>0; return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const pick = a=>a[Math.floor(RNG()*a.length)];
+const shuffle = a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(RNG()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+
+/* ── 표류자: 패시브는 규칙 함수 안에서 hero.id로 처리, 필살기는 use() ── */
+const HEROES = [
+  { id:'albert', name:'알버트', tag:'머리가 뻗친 과학자', passive:'겨울이 짧게 느껴져 겨울 식량 12→8섬',
+    ult:'시간 늘리기', ultDesc:'이번 가을, 길드에 갚을 몫을 다음 해로 미룸 (신뢰 안 떨어짐)', phases:[0,1,2],
+    use:s=>{ s.flags.deferRepay=true; return '시계가 잠깐 멈췄어요. 이번 가을엔 길드가 장부를 펼치지 않아요.'; },
+    evalText:'겨울 식량이 적게 들어 매년 곡식 4섬을 아꼈어요. 대신 재난 자체는 막지 못했죠.' },
+  { id:'sejong', name:'세종대왕님?', tag:'갓을 쓴 현명한 임금', passive:'예보 정확도 75→95%',
+    ult:'훈민정음 해독', ultDesc:'길드 장부를 해독해 남은 빚의 얹은 몫(이자)을 전부 지움', phases:[0,1,2,3],
+    use:s=>{ let cut=0; s.loans.forEach(l=>{ const c=Math.min(l.extra,l.remaining); l.remaining-=c; l.extra=0; cut+=c; }); s.loans=s.loans.filter(l=>l.remaining>0); return cut?`장부를 읽어 보니 얹은 몫이 ${cut}닢! 길드가 머쓱해하며 지웠어요.`:'장부에 얹은 몫이 없어요. 빚이 없을 때 쓰면 아무 일도 없어요.'; },
+    evalText:'예보가 거의 틀리지 않아 겨울을 미리 읽을 수 있었어요. 읽고도 대비하지 않으면 소용없지만요.' },
+  { id:'sunsin', name:'순신 장군', tag:'갑옷 입은 장군', passive:'바다로 보낸 배가 절대 침몰하지 않음',
+    ult:'학익진', ultDesc:'다음 겨울 재난 피해 0', phases:[0,1,2,3],
+    use:s=>{ s.flags.shield=true; return '배들이 학의 날개처럼 섬을 감쌌어요. 다음 겨울은 두렵지 않아요.'; },
+    evalText:'바다 위 위험엔 강했지만 역병이나 혹한엔 대비가 따로 필요했어요.' },
+  { id:'newton', name:'뉴튼', tag:'가발 쓰고 사과 든 사람', passive:'매 가을 수확 +6섬 (열매가 잘 떨어짐)',
+    ult:'만유인력', ultDesc:'섬에 흩어진 금화를 끌어모아 금화 +20', phases:[0,1,2,3],
+    use:s=>{ s.gold+=20; return '땅에 떨어진 금화들이 굴러와 주머니에 모였어요. +20닢!'; },
+    evalText:'수입이 꾸준히 늘었어요. 꾸준한 수입은 재난을 막진 못해도 회복을 빠르게 해요.' },
+  { id:'leo', name:'레오', tag:'수염 긴 발명가', passive:'모든 건물 건설비 −30%',
+    ult:'비행 기계', ultDesc:'이번 봄, 건물 하나를 무료로 지음', phases:[0],
+    use:s=>{ s.flags.freeBuild=true; return '설계도를 펼쳤어요. 이번 봄엔 건물 하나가 공짜예요!'; },
+    evalText:'싸게 지을 수 있어서 대비할 여유가 많았어요. 무엇을 먼저 지을지가 실력이었죠.' },
+  { id:'marie', name:'마리', tag:'빛나는 시험관을 든 과학자', passive:'역병 피해 항상 절반',
+    ult:'빛의 실험', ultDesc:'다음 겨울 혹한·곡식 썩음 피해 없음', phases:[0,1,2,3],
+    use:s=>{ s.flags.warm=true; return '시험관이 은은하게 빛나요. 다음 겨울은 곡식이 얼지 않아요.'; },
+    evalText:'역병엔 강했지만 태풍엔 대비가 따로 필요했어요.' },
+  { id:'napoli', name:'나폴리', tag:'키 작고 모자 큰 황제', passive:'곡식이 바닥나도 딱 한 번은 버팀',
+    ult:'총동원령', ultDesc:'이번 가을 수확 2배 (가을 전에 써야 해요)', phases:[0,1],
+    use:s=>{ s.flags.doubleHarvest=true; return '섬사람 전부가 밭으로 나갔어요. 이번 가을은 두 배!'; },
+    evalText:'한 번의 실패를 버틸 수 있었어요. 두 번째는 없다는 걸 잊지 마세요.' },
+  { id:'shake', name:'셰익', tag:'깃펜을 든 극작가', passive:'곡식 팔 때 1섬에 금화 2닢',
+    ult:'명대사', ultDesc:'길드를 감동시켜 신뢰 +2', phases:[0,1,2,3],
+    use:s=>{ s.trust=clamp(s.trust+2,0,5); return '"빚이란 약속의 다른 이름." 길드 상인이 눈물을 훔쳤어요. 신뢰 +2!'; },
+    evalText:'말솜씨로 곡식을 비싸게 팔았어요. 팔아서 번 금화가 겨울 곡식보다 값진지는 매번 판단해야 했죠.' },
+];
+
+/* ── v0.5 성향 레이어 ─────────────────────────────────────────────
+   세 축: r 위험(안정− / 도전+) · t 시간(현재− / 미래+) · j 판단(자기판단− / 타인참조+)
+   점수 출처 ① 카드 선택지의 persona:[r,t,j] (data/*.json, 정본은 tools/persona_score.py → 팀 검토)
+             ② 봄 결정(짓기·게시판·쉬기)  ③ 동료의 한마디를 따랐는지(따름 j+1 / 안 따름 j−1)
+   유형은 한 생이 아니라 환생 전체 누적으로 낸다 (한 생엔 신호가 너무 적다 — 성향매핑 v0.1 노트) */
+const AXES = {
+  r:{ name:'위험', neg:'안정', pos:'도전', negE:'🛡️', posE:'⚔️' },
+  t:{ name:'시간', neg:'현재', pos:'미래', negE:'🍎', posE:'🌱' },
+  j:{ name:'판단', neg:'자기판단', pos:'타인참조', negE:'🧭', posE:'👂' },
+};
+/* 동료마다 추천 성향 [위험 가중, 시간 가중]. 추천이 늘 정답은 아니다 — 따를지 말지가 판단 축 */
+const ADVICE = {
+  albert:{ w:[0,1],     say:'시간을 길게 놓고 보면' },
+  sejong:{ w:[-1,0.5],  say:'과인이 보기엔' },
+  sunsin:{ w:[1,0],     say:'장수로서 말하건대' },
+  newton:{ w:[0.5,1],   say:'계산해 보니' },
+  leo:{    w:[1,-0.5],  say:'내 설계대로라면' },
+  marie:{  w:[-1,0],    say:'실험해 보니' },
+  napoli:{ w:[1,-1],    say:'짐이 명하노니' },
+  shake:{  w:[0,-1],    say:'인생은 한 편의 연극,' },
+};
+const PROTECT = ['warehouse','breakwater','reservoir','herb'];
+const BET_PERSONA = { vault:[-1,1,0], ship:[1,1,0], treasure:[2,1,0] };
+function hashNoise(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return ((h>>>0)%1000)/1000-0.5; }
+function personaAdd(s,src,v){
+  if(!v) return; const P=s.persona;
+  ['r','t','j'].forEach((k,i)=>{ if(v[i]){ P[k]+=v[i]; P.n[k]++; P.last[k]=Math.sign(v[i]); } });
+  if(v.some(x=>x)) P.log.push({src,v});
+}
+/* 동료 추천: 난수를 쓰지 않는다(같은 동료는 같은 카드에 늘 같은 말을 한다 → 시연·시뮬레이션 재현성 유지) */
+function adviceFor(s,card){
+  const ok=card.choices.map((c,i)=>choiceOk(s,c)?i:-1).filter(i=>i>=0); if(ok.length<2) return null;
+  const a=ADVICE[s.hero.id]; if(!a) return null;
+  // 위험·시간 축에서 선택지끼리 차이가 없는 카드(성향 무관 지식 카드)엔 동료가 끼어들지 않는다 — 성격에 맞는 근거가 없어서
+  const key=i=>{ const p=card.choices[i].persona||[0,0,0]; return p[0]+','+p[1]; };
+  if(new Set(ok.map(key)).size<2) return null;
+  let best=null, bv=-1e9;
+  ok.forEach(i=>{ const p=card.choices[i].persona||[0,0,0]; const v=a.w[0]*p[0]+a.w[1]*p[1]+hashNoise(s.hero.id+card.id+i)*0.6; if(v>bv){ bv=v; best=i; } });
+  return best;
+}
+/* 따름 +, 안 따름 −. 단 선택지가 k개면 아무렇게나 골라도 1/k는 우연히 일치하므로 그만큼 빼서 0이 되게 맞춘다
+   (k=2: +1 / −1, k=3: +1.33 / −0.67) */
+function followAdvice(s,advised,chosen,k){
+  if(advised==null) return; s.advice.given++; if(advised===chosen) s.advice.followed++;
+  k=k||2; const v=2*((advised===chosen?1:0)-1/k);
+  personaAdd(s,'advice',[0,0,Math.round(v*100)/100]);
+}
+/* 유형: 축별 합계의 부호. 합계 0이면 그 축의 마지막 신호. 신호 3개 미만이면 '흐릿' 표시 */
+const TYPE_BASE = {
+  'neg,pos':{ emoji:'🏯', name:'등대지기 영주', good:'재난이 와도 섬이 흔들리지 않아요. 미리 대비하고 멀리 봐요.', care:'너무 아끼면 좋은 기회를 놓칠 수 있어요.' },
+  'neg,neg':{ emoji:'🏡', name:'오두막 영주',   good:'무리하지 않고 지금의 섬을 아낄 줄 알아요.', care:'갑작스러운 겨울에 쓸 몫은 따로 떼어 두세요.' },
+  'pos,pos':{ emoji:'🗺️', name:'탐험가 영주',   good:'시간을 편으로 삼아 크게 키울 줄 알아요.', care:'묶어 둔 동안 겨울이 오면 손을 쓸 수 없어요.' },
+  'pos,neg':{ emoji:'⚡', name:'번개 영주',     good:'기회가 오면 머뭇거리지 않아요.', care:'외상과 걸기가 겹치면 장부가 금세 무거워져요.' },
+};
+const TYPE_JUDGE = {
+  neg:{ word:'스스로 길을 찾는', line:'남의 말보다 자기 계산을 믿어요. 가끔은 물어보는 것도 좋은 계산이에요.' },
+  pos:{ word:'귀 기울이는',     line:'조언을 잘 듣고 확인해요. 누구의 말인지는 한 번 더 살펴보세요.' },
+};
+function personaType(P){
+  const ax={}; const B=CFG.personaBias||{}; ['r','t','j'].forEach(k=>{ const n=(P.n&&P.n[k])||0, v=(P[k]||0)-(B[k]||0)*n, last=(P.last&&P.last[k])||0;
+    const sg = v>0?1:v<0?-1:last; ax[k]={ v, n, pole: n? (sg>0?'pos':sg<0?'neg':null) : null, clear:n>=3 }; });
+  const base = ax.r.pole&&ax.t.pole ? TYPE_BASE[ax.r.pole+','+ax.t.pole] : null;
+  const jd = ax.j.pole ? TYPE_JUDGE[ax.j.pole] : null;
+  const name = base ? `${jd&&ax.j.clear?jd.word+' ':''}${base.name}` : '아직 모르는 영주';
+  return { ax, base, jd, name, emoji: base?base.emoji:'❔', blurry: ['r','t','j'].filter(k=>!ax[k].clear) };
+}
+function addPersona(a,b){ ['r','t','j'].forEach(k=>{ a[k]=(a[k]||0)+(b[k]||0); a.n[k]=(a.n[k]||0)+((b.n&&b.n[k])||0); if(b.last&&b.last[k]) a.last[k]=b.last[k]; }); return a; }
+
+/* ── 상태 ── */
+function newState(hero, deck, script, birth){
+  const s = { hero, deck:deck||[], script:script||null, years:(script&&script.years)||CFG.years,
+    year:1, season:0, gold:CFG.gold, grain:CFG.grain, trust:CFG.trust,
+    built:new Set(), loans:[], pending:[], flags:{}, limitBonus:0,
+    forecast:null, realDisaster:null, springRolled:0, usedCards:new Set(), cardsSeen:[],
+    log:[], chron:new Map(), exposed:new Set(), ultUsed:false, napoliUsed:false, weather:'calm',
+    dead:null, turns:0, over:false, lockLeft:0, yearly:[], birth:birth||null,
+    persona:{r:0,t:0,j:0,n:{r:0,t:0,j:0},last:{r:0,t:0,j:0},log:[]}, advice:{given:0,followed:0} };
+  if(birth){ s.gold=birth.gold; s.grain=birth.grain; s.trust=birth.trust; (birth.built||[]).forEach(b=>s.built.add(b));
+    if(birth.loan){ addLoan(s,'선대 영주의 빚',birth.loan,{n:3,rate:0}); s.chron.delete('installment'); } }
+  return s;
+}
+/* 시간 잠금: 결과가 나중에 오는 걸기(risk)만. 확률이 낮을수록 오래 지켜본다. 카드에 lock을 적으면 그 값이 우선 */
+function lockOf(ch){
+  if(ch.lock!=null) return ch.lock;
+  if(!CFG.lockOn || !ch.risk || ch.risk.now) return 0;
+  const st=ch.risk.stake||{}; if(!(st.gold||st.grain)) return 0;
+  const p=ch.risk.p; return p<0.6?3:p<0.8?2:1;
+}
+const has = (s,id)=>s.built.has(id);
+const cap = s=>has(s,'warehouse')?CFG.capWarehouse:CFG.capBase;
+const rate = s=>s.trust>=5?0.10:s.trust>=3?0.15:0.25;
+const winterFood = s=>(s.hero.id==='albert'?8:CFG.winterFood)+(s.flags.foodExtra||0);
+const costOf = (s,b)=>s.hero.id==='leo'?Math.ceil(b.cost*0.7):b.cost;
+const debt = s=>s.loans.reduce((a,l)=>a+l.remaining,0);
+const creditLimit = s=>s.trust*CFG.limitPerTrust + s.limitBonus;
+const creditRoom = s=>Math.max(0,creditLimit(s)-debt(s));
+const canBorrow = (s,amount)=>s.trust>=2 && !s.flags.noCredit && amount<=creditRoom(s);
+function logIt(s,text){ s.log.push({when:`${s.year}년 ${SEASON_NAMES[s.season]}`, text}); }
+function mark(s,key){ const r=RULE_CONCEPTS[key]; if(!r) return; if(!s.chron.has(key)) s.chron.set(key,{isl:r.isl,real:r.real,sub:r.sub}); s.exposed.add(r.matrix); }
+function markCard(s,card,ch){ const k=ch.concept||card.concept; if(!k) return; s.exposed.add(k);
+  const m=CONCEPT_META[k]||{real:k,sub:''}; s.chron.set('card:'+card.id,{isl:ch.isl||card.title, real:m.real, sub:m.sub, card:card.id}); }
+function addLoan(s,name,amount,opt){
+  opt=opt||{}; const r = opt.rate==null ? rate(s) : opt.rate; const n = opt.n||3;
+  const total=Math.ceil(amount*(1+r)), pay=Math.ceil(total/n);
+  s.loans.push({name,total,remaining:total,pay,extra:total-amount,n});
+  mark(s,'credit'); if(n>1) mark(s,'installment'); if(r>0) mark(s,'interest');
+  return s.loans[s.loans.length-1];
+}
+
+/* ── 봄 ── */
+function springRoll(s){
+  if(s.springRolled===s.year) return;
+  const sc = s.script && s.script.winters && s.script.winters[s.year-1];
+  const keys=Object.keys(DISASTERS);
+  if(sc){ s.realDisaster=sc.real; s.forecast=sc.forecast||sc.real; }
+  else { s.realDisaster=pick(keys); const acc = s.hero.id==='sejong'?0.95:CFG.forecastAcc;
+    s.forecast = RNG()<acc ? s.realDisaster : pick(keys.filter(k=>k!==s.realDisaster)); }
+  s.springRolled=s.year;
+}
+function buildOptions(s){
+  return BUILDINGS.filter(b=>!has(s,b.id)).map(b=>{ const cost=costOf(s,b);
+    return { b, cost, free:!!s.flags.freeBuild, canCash:s.gold>=cost, canCredit:canBorrow(s,cost) }; });
+}
+function doBuild(s,id,pay){
+  const b=BUILDINGS.find(x=>x.id===id), cost=costOf(s,b); const lines=[]; let note='';
+  if(pay==='free'){ s.flags.freeBuild=false; logIt(s,`${b.name}을 비행 기계로 무료 건설`); note='설계도 한 장으로 뚝딱! 금화도 빚도 들지 않았어요.'; }
+  else if(pay==='cash'){ s.gold-=cost; lines.push(['금화',-cost]); logIt(s,`${b.name}을 금화로 지었다`); note='금고에서 바로 냈어요. 빚은 없지만 금화가 줄었어요.'; }
+  else { if(!canBorrow(s,cost)){ mark(s,'limit'); return null; }
+    const l=addLoan(s,`${b.name} 외상`,cost); lines.push(['장부에 올린 값',l.total]); logIt(s,`${b.name}을 외상으로 지었다 (${cost}닢 → ${l.total}닢으로 나눠 갚기)`);
+    note=`장부에 ${l.total}닢이 올랐어요. ${cost}닢짜리를 ${l.total}닢에 산 셈이에요. 대신 지금 금화는 그대로예요.`; }
+  s.built.add(id); mark(s,b.concept); if(s.built.size>=2) mark(s,'opportunity');
+  if(pay!=='free') personaAdd(s,'build:'+id,[PROTECT.includes(id)?-1:0, pay==='cash'?1:-1, 0]);
+  return { title:`${b.name} 완성`, note, lines };
+}
+
+/* ── 여름: 카드 뽑기 ── */
+function cardWhenOk(s,c){
+  const w=c.when||{};
+  if(w.has && !has(s,w.has)) return false;
+  if(w.not && has(s,w.not)) return false;
+  if(w.trustMin!=null && s.trust<w.trustMin) return false;
+  if(w.loans && !s.loans.length) return false;
+  if(w.noLoans && s.loans.length) return false;
+  if(w.yearMin && s.year<w.yearMin) return false;
+  if(w.goldMin!=null && s.gold<w.goldMin) return false;
+  if(w.grainMin!=null && s.grain<w.grainMin) return false;
+  return c.choices.some(ch=>choiceOk(s,ch));
+}
+function drawCards(s){
+  const sc = s.script && s.script.cards && s.script.cards[s.year-1];
+  const n = (s.script && s.script.cardsPerSummer) || CFG.cardsPerSummer;
+  let out=[];
+  if(sc){ out = sc.map(id=>s.deck.find(c=>c.id===id)).filter(Boolean); }
+  else {
+    for(let k=0;k<n;k++){
+      let pool = s.deck.filter(c=>!s.usedCards.has(c.id) && !out.includes(c) && (c.difficulty||1)<=s.year && cardWhenOk(s,c));
+      if(!pool.length) pool = s.deck.filter(c=>!out.includes(c) && cardWhenOk(s,c));
+      if(!pool.length) break;
+      const wts = pool.map(c=>((c.difficulty||1)===s.year?3:1)*(s.birth&&s.birth.tempt&&['needwant','scam'].includes(c.concept)?s.birth.tempt:1)); let r=RNG()*wts.reduce((a,b)=>a+b,0), i=0;
+      while(r>=wts[i]){ r-=wts[i]; i++; } out.push(pool[Math.min(i,pool.length-1)]);
+    }
+  }
+  out.forEach(c=>{ s.usedCards.add(c.id); s.cardsSeen.push(c.id); });
+  return out;
+}
+function choiceOk(s,ch){
+  const n=ch.need||{};
+  if(n.trust!=null && s.trust<n.trust) return false;
+  if(n.has && !has(s,n.has)) return false;
+  if(n.not && has(s,n.not)) return false;
+  if(n.gold!=null && s.gold<n.gold) return false;
+  if(n.grain!=null && s.grain<n.grain) return false;
+  if(n.loans && !s.loans.length) return false;
+  const fx=ch.fx||{};
+  if(typeof fx.gold==='number' && fx.gold<0 && s.gold+fx.gold<0) return false;
+  if(typeof fx.grain==='number' && fx.grain<0 && s.grain+fx.grain<0) return false;
+  if(ch.risk && ch.risk.stake){ const st=ch.risk.stake; const g=s.gold+(ch.loan&&ch.loan.give==='gold'?ch.loan.amount:0);
+    if(typeof st.gold==='number' && g<st.gold) return false;
+    if(st.gold==='all' && s.gold<=0) return false;
+    if(typeof st.grain==='number' && s.grain<st.grain) return false; }
+  if(ch.loan && !canBorrow(s,ch.loan.amount)) return false;
+  return true;
+}
+const tpl = (t,v)=>String(t||'').replace(/\{(\w+)\}/g,(m,k)=>v[k]!=null?v[k]:m);
+function applyFx(s,fx,lines){
+  if(!fx) return;
+  if(fx.gold!=null){ const d = fx.gold==='all'?-s.gold:fx.gold; s.gold=Math.max(0,s.gold+d); if(d) lines.push(['금화',d]); }
+  if(fx.grain!=null){ const d=fx.grain; s.grain+=d; if(d) lines.push(['곡식',d]); }
+  if(fx.trust){ s.trust=clamp(s.trust+fx.trust,0,5); lines.push(['길드 신뢰',fx.trust]); }
+}
+function applyChoice(s,card,i){
+  const ch=card.choices[i]; const lines=[]; const v={};
+  let fx=ch.fx, result=ch.result||'', later=ch.later, risk=ch.risk, flag=ch.flag, loan=ch.loan;
+  if(ch.ifHas && has(s,ch.ifHas.b)){ const o=ch.ifHas; if('fx' in o) fx=o.fx; if('result' in o) result=o.result;
+    if(o.clear){ later=null; risk=null; flag=null; loan=null; } }
+  applyFx(s,fx,lines);
+  if(loan){ const l=addLoan(s,loan.name||`${card.title} 외상`,loan.amount,{n:loan.n,rate:loan.rate});
+    if(loan.give==='grain'){ s.grain+=loan.amount; lines.push(['곡식',loan.amount]); }
+    if(loan.give==='gold'){ s.gold+=loan.amount; lines.push(['금화',loan.amount]); }
+    lines.push(['장부에 오른 값',l.total]); v.pay=l.pay; v.total=l.total; }
+  if(later){ (Array.isArray(later)?later:[later]).forEach(L=>s.pending.push({gold:L.gold||0,grain:L.grain||0,trust:L.trust||0,text:L.text||'',at:s.year+(L.years||0)})); }
+  if(risk){
+    const st=risk.stake||{}; let stake=0, res='gold';
+    if(st.gold!=null){ stake = st.gold==='all'?s.gold:st.gold; s.gold-=stake; if(stake) lines.push(['금화',-stake]); }
+    else if(st.grain!=null){ res='grain'; stake=st.grain; s.grain-=stake; if(stake) lines.push(['곡식',-stake]); }
+    let p=risk.p; if(risk.hero && risk.hero[s.hero.id]!=null) p=risk.hero[s.hero.id];
+    const forced = s.script && s.script.risk && s.script.risk[card.id];
+    const ok = forced!=null ? forced : RNG()<p;
+    const o = ok?risk.win:risk.lose; const out={gold:o.gold||0,grain:o.grain||0,trust:o.trust||0};
+    if(o.mul!=null) out[res]=Math.round(stake*o.mul);
+    const text=tpl(o.text,{stake,amt:out[res]});
+    if(risk.now){ applyFx(s,out,lines); result += (result?' ':'')+text; }
+    else s.pending.push({...out,text,at:s.year+(risk.years||0)});
+    v.stake=stake;
+  }
+  if(flag){ for(const [k,val] of Object.entries(flag)){ if(k==='limitBonus') s.limitBonus+=val; else if(typeof val==='number' && typeof s.flags[k]==='number') s.flags[k]+=val; else s.flags[k]=val; } }
+  if(ch.prepay){ v.paid=0; v.cut=0; } if(ch.revolve) v.add=0;
+  if(ch.prepay && s.loans.length){ let paid=0, cut=0;
+    s.loans.forEach(l=>{ const want = ch.prepay.amount==='all'?l.remaining:Math.min(l.remaining,ch.prepay.amount);
+      const disc = Math.floor(Math.min(l.extra,want)*(ch.prepay.discount||0)); const cash=want-disc;
+      if(s.gold>=cash){ s.gold-=cash; l.remaining-=want; l.extra=Math.max(0,l.extra-disc); paid+=cash; cut+=disc; } });
+    s.loans=s.loans.filter(l=>l.remaining>0); if(paid) lines.push(['미리 갚은 금화',-paid]); v.paid=paid; v.cut=cut; }
+  if(ch.revolve && s.loans.length){ let add=0;
+    s.loans.forEach(l=>{ const plus=Math.ceil(l.remaining*ch.revolve.extraRate); l.remaining+=plus; l.extra+=plus; l.total+=plus; add+=plus; l.pay=Math.ceil(l.pay/2); });
+    lines.push(['장부에 더 얹힌 몫',add]); v.add=add; }
+  if(risk){ const L=lockOf({...ch,risk}); if(L){ s.lockLeft=L; v.lock=L; mark(s,'timelock'); } }
+  if(!s.chron.has('card:'+card.id)) markCard(s,card,ch); else s.exposed.add(ch.concept||card.concept);
+  logIt(s,`${card.title}: ${ch.text}`);
+  if(ch.persona) personaAdd(s,'card:'+card.id,ch.persona);
+  if(s.trust<=0){ s.dead='trust'; }
+  return { text:tpl(result,v), lines, weather:card.weather||null, lock:v.lock||0 };
+}
+
+/* ── 가을 ── */
+function doAutumn(s){
+  const lines=[], notes=[];
+  let harvest = CFG.harvest + (has(s,'field2')?CFG.field2:0) + (s.hero.id==='newton'?6:0) + (s.flags.harvestBoost||0);
+  if(s.flags.drought){ if(has(s,'reservoir')) notes.push('가뭄이 들었지만 저수지 물로 밭을 지켰어요.'); else { harvest=Math.ceil(harvest/2); notes.push('가뭄으로 수확이 절반이에요.'); mark(s,'unprepared'); } }
+  if(s.flags.harvestMul){ harvest=Math.round(harvest*s.flags.harvestMul); }
+  if(s.flags.doubleHarvest){ harvest*=2; notes.push('총동원령! 수확이 두 배예요.'); }
+  harvest=Math.max(0,harvest);
+  s.grain+=harvest; lines.push(['수확',harvest]);
+  let gold = CFG.tax + (has(s,'market')?CFG.market:0) - (s.flags.taxExtra||0); gold=Math.max(0,gold);
+  s.gold+=gold; lines.push([(s.flags.taxExtra>0?'항구 세금(왕실 몫 뺀 것)':'항구 세금')+(has(s,'market')?' + 시장':''),gold]);
+  const keep=[]; s.pending.forEach(p=>{ if(p.at>s.year){ keep.push(p); return; }
+    if(p.gold){ s.gold=Math.max(0,s.gold+p.gold); lines.push([p.gold>0?'돌아온 금화':'나간 금화',p.gold]); }
+    if(p.grain){ s.grain+=p.grain; lines.push([p.grain>0?'돌아온 곡식':'나간 곡식',p.grain]); }
+    if(p.trust){ s.trust=clamp(s.trust+p.trust,0,5); lines.push(['길드 신뢰',p.trust]); }
+    if(p.text) notes.push(p.text); });
+  s.pending=keep;
+  ['drought','harvestMul','harvestBoost','doubleHarvest','taxExtra'].forEach(k=>delete s.flags[k]);
+  logIt(s,`수확 ${harvest}섬, 금화 ${gold}닢`);
+  if(s.trust<=0) s.dead='trust';
+  return { lines, notes };
+}
+function doRepay(s){
+  const lines=[], notes=[];
+  if(!s.loans.length){ notes.push('장부가 깨끗해요. 갚을 것이 없어요.'); return {lines,notes}; }
+  if(s.flags.deferRepay){ delete s.flags.deferRepay; logIt(s,'상환을 한 해 미룸'); notes.push('시간 늘리기 덕에 이번 가을엔 갚지 않아도 돼요. 빚은 그대로 남아 있어요.'); return {lines,notes}; }
+  mark(s,'dueday');
+  s.loans.forEach(l=>{
+    const due=Math.min(l.pay,l.remaining);
+    if(s.gold>=due){ s.gold-=due; l.remaining-=due; lines.push([l.name+' 갚음',-due]);
+      if(l.remaining<=0){ notes.push(`${l.name}을 모두 갚았어요. 길드 신뢰가 올랐어요. ♥`); s.trust=clamp(s.trust+1,0,5); mark(s,'trustup'); logIt(s,`${l.name} 완납, 신뢰 상승`); } }
+    else { const late=Math.ceil(due*CFG.lateFee); l.remaining+=late; l.extra+=late; s.trust=clamp(s.trust-1,0,5); mark(s,'overdue');
+      lines.push([l.name+' 못 갚음',0]); notes.push(`<span class="danger">금화가 모자라 ${l.name}을 갚지 못했어요.</span> 길드가 ${late}닢을 더 얹었고, 신뢰가 떨어졌어요. ♡`); logIt(s,`${l.name} 연체, 신뢰 하락`); }
+  });
+  s.loans=s.loans.filter(l=>l.remaining>0);
+  if(s.trust<=0) s.dead='trust';
+  return {lines,notes};
+}
+function salePrice(s){ return Math.max(0,Math.round((s.hero.id==='shake'?2:1)*(s.flags.priceMul||1)*10)/10); }
+function sellOptions(s){
+  const wf=winterFood(s), price=salePrice(s);
+  const s10=Math.min(10,Math.max(0,s.grain)), sAll=Math.max(0,s.grain-wf);
+  return [ {n:0, label:'팔지 않는다'}, {n:s10, label:'10섬만 판다'}, {n:sAll, label:'겨울 식량만 남기고 다 판다'} ].map(o=>({...o, gold:Math.floor(o.n*price)}));
+}
+function doSell(s,n){
+  const price=salePrice(s); const g=Math.floor(n*price);
+  s.grain-=n; s.gold+=g; mark(s,'sell');
+  let rot=Math.max(0,s.grain-cap(s)); if(rot&&(s.flags.warm||s.flags.rotSafe)) rot=0;
+  if(rot){ s.grain-=rot; mark(s,'rot'); }
+  delete s.flags.priceMul; delete s.flags.rotSafe;
+  s.yearly.push({year:s.year, have:Math.max(0,s.gold)+Math.max(0,s.grain)+s.built.size*15, debt:debt(s)});
+  logIt(s,n?`곡식 ${n}섬을 팔았다`:'곡식을 팔지 않았다');
+  const lines=[]; if(n) lines.push(['곡식 판 금화',g]); if(rot) lines.push(['창고 밖에서 썩은 곡식',-rot]);
+  return { rot, lines, text: rot?`창고가 작아 ${rot}섬이 썩었어요. 모아 둘 곳이 없으면 있던 것도 사라져요.`:`곡식 ${s.grain}섬으로 겨울을 맞아요.` };
+}
+
+/* ── 겨울 ── */
+function doWinter(s){
+  const key=s.realDisaster, d=DISASTERS[key];
+  let guarded = d.guard ? has(s,d.guard) : true;
+  if(key==='plague' && s.hero.id==='marie') guarded=true;
+  if(key==='cold' && s.flags.warm) guarded=true;
+  let paid='';
+  if(!guarded && key!=='calm' && (s.flags.guardWinter===key || s.flags.guardWinter==='any')){ guarded=true; paid='미리 맺어 둔 약속 덕에 피해를 나눠 졌어요. '; }
+  let fx = guarded ? d.saved : d.hit, shieldNote='';
+  if(s.flags.shield && key!=='calm'){ fx={grain:0,gold:0}; shieldNote='학익진이 섬을 감쌌어요. 피해가 하나도 없어요!'; }
+  ['shield','warm','guardWinter'].forEach(k=>delete s.flags[k]);
+  const wf=winterFood(s), lines=[['겨울 식량',-wf]]; delete s.flags.foodExtra;
+  s.grain-=wf;
+  if(fx.grain){ s.grain+=fx.grain; lines.push([d.name+' 피해 (곡식)',fx.grain]); }
+  if(fx.gold){ s.gold=Math.max(0,s.gold+fx.gold); lines.push([d.name+' 피해 (금화)',fx.gold]); }
+  if(key!=='calm') mark(s, (guarded||shieldNote)?'prepared':'unprepared');
+  logIt(s,`${d.name}${key==='calm'?'':(guarded||shieldNote)?' — 대비한 덕에 무사':' — 큰 피해'}`);
+  let starveSaved=false;
+  if(s.grain<0 && s.hero.id==='napoli' && !s.napoliUsed){ s.napoliUsed=true; s.grain=0; starveSaved=true; logIt(s,'나폴리의 기백으로 굶주림을 한 번 버팀'); }
+  if(s.grain<0){ mark(s,'starve'); s.dead='starve'; }
+  const text = key==='calm' ? d.textHit : shieldNote || (guarded?(paid+(d.textSaved||'')):d.textHit);
+  return { key, d, guarded, text, lines, wrong: s.forecast!==key && key!=='calm', starveSaved };
+}
+
+/* ── 지켜보기: 잠금 중인 계절은 선택 없이 흘러간다 ── */
+function autoSeason(s){
+  const lines=[], notes=[]; let title='';
+  if(s.season===0){ springRoll(s); title='봄 — 아무것도 짓지 못했어요'; notes.push(`예보: ${DISASTERS[s.forecast].emoji} ${DISASTERS[s.forecast].name}. 하지만 걸어 둔 일 때문에 손을 쓸 수 없어요.`); logIt(s,'지켜보기 — 봄에 아무것도 짓지 못함'); }
+  else if(s.season===1){ title='여름 — 손님을 만나지 못했어요'; logIt(s,'지켜보기 — 여름 손님을 놓침'); }
+  else if(s.season===2){ title='가을 — 수확과 장부의 날이 저절로 지나갔어요'; const a=doAutumn(s); lines.push(...a.lines); notes.push(...a.notes);
+    if(!s.dead){ const r=doRepay(s); lines.push(...r.lines); notes.push(...r.notes); }
+    if(!s.dead){ const x=doSell(s,0); lines.push(...x.lines); if(x.rot) notes.push(x.text); } }
+  else { const w=doWinter(s); title=`겨울 — ${w.d.emoji} ${w.d.name}${w.key==='calm'?'':'이 왔어요'}`; lines.push(...w.lines); notes.push(w.text); if(w.wrong) notes.push('예보와 다른 재난이었어요.'); }
+  s.lockLeft=Math.max(0,s.lockLeft-1);
+  return { title, lines, notes };
+}
+function betOptions(s){
+  return BETS.filter(b=>s.year+b.back<=s.years).map(b=>({ b, stakes:[10,20].filter(x=>s.gold>=x) }));
+}
+function doBet(s,id,stake){
+  const b=BETS.find(x=>x.id===id); s.gold-=stake;
+  let p=b.p; if(b.hero && b.hero[s.hero.id]!=null) p=b.hero[s.hero.id];
+  const ok=(s.script&&s.script.bets&&s.script.bets[id]!=null)?s.script.bets[id]:RNG()<p; const amt=ok?Math.round(stake*b.mul):0;
+  s.pending.push({gold:amt,text:tpl(ok?b.win:b.lose,{stake,amt}),at:s.year+b.back});
+  s.lockLeft=b.lock; mark(s,'timelock'); personaAdd(s,'bet:'+id,BET_PERSONA[id]); if(b.p<1){ s.exposed.add('riskreturn'); if(!s.chron.has('bet')) s.chron.set('bet',{isl:`${b.name}에 금화를 걸었다`,real:'위험과 수익',sub:'크게 벌 수 있는 곳은 크게 잃을 수도 있어요'}); }
+  else { s.exposed.add('compound'); if(!s.chron.has('bet0')) s.chron.set('bet0',{isl:'길드 금고에 맡기고 기다렸다',real:'예금 · 이자',sub:'확실하지만 조금. 맡긴 동안은 꺼낼 수 없어요'}); }
+  logIt(s,`${b.name}에 금화 ${stake}닢을 걸었다 — ${b.lock}계절 지켜보기`);
+  return { title:`${b.emoji} ${b.name}`, note:`금화 ${stake}닢을 걸었어요. 이제 ${b.lock}계절 동안은 짓지도, 손님을 만나지도, 곡식을 팔지도 못하고 지켜봐야 해요. 그 사이 겨울이 오면 준비 없이 맞아요.`, lines:[['금화',-stake]] };
+}
+function goalFor(life){ return CFG.goals[Math.min(life,CFG.goals.length)-1]; }
+function passed(s,goal){ return !s.dead && score(s)>=goal; }
+
+/* ── 진행·점수 ── */
+function advance(s){
+  s.turns++; const wasWinter = s.season===3;
+  s.season++; if(s.season>3){ s.season=0; s.year++; }
+  if(wasWinter) s.ultUsed=false;
+  if(s.year>s.years){ s.over=true; }
+  return s.over;
+}
+function useUlt(s){ if(s.ultUsed || !s.hero.phases.includes(s.season)) return null; s.ultUsed=true; const msg=s.hero.use(s); logIt(s,`필살기 「${s.hero.ult}」 발동`); return msg; }
+function score(s){ return Math.max(0,s.gold)+Math.max(0,s.grain)+s.built.size*15-(CFG.scoreNetDebt?debt(s):0); }  // 영지 가치
+function grade(s){ if(s.dead) return s.dead; const sc=score(s), k=s.years/3; return sc>=110*k?'legend':sc>=80*k?'wise':'survivor'; }  // 시연 2년 모드는 기준을 2/3로
+
+/* ── 카드 검증 (편집자가 JSON을 고쳤을 때 오류를 미리 잡는다) ── */
+function validateCard(c){
+  const err=[]; const req=['id','title','story','choices','concept','difficulty','teacher'];
+  req.forEach(k=>{ if(c[k]==null||c[k]==='') err.push(`${c.id||'?'}: ${k} 없음`); });
+  if(c.concept && !CONCEPT_META[c.concept]) err.push(`${c.id}: 알 수 없는 개념 ${c.concept}`);
+  (c.choices||[]).forEach((ch,i)=>{ if(!ch.text) err.push(`${c.id}#${i}: text 없음`); if(!ch.result && !(ch.risk&&ch.risk.now)) err.push(`${c.id}#${i}: result 없음`);
+    if(ch.concept && !CONCEPT_META[ch.concept]) err.push(`${c.id}#${i}: 알 수 없는 개념 ${ch.concept}`);
+    if(ch.ifHas && !B_NAME[ch.ifHas.b]) err.push(`${c.id}#${i}: 알 수 없는 건물 ${ch.ifHas.b}`); });
+  if(!(c.choices||[]).length) err.push(`${c.id}: 선택지 0개`);
+  return err;
+}
+const ENGINE_API = { BETS, betOptions, doBet, BIRTHS, lockOf, autoSeason, goalFor, passed, CFG, SEASON_NAMES, SEASON_EN, BUILDINGS, B_NAME, DISASTERS, RULE_CONCEPTS, CONCEPT_META, HEROES,
+  setRng, seeded, pick, shuffle, clamp, newState, has, cap, rate, winterFood, costOf, debt, creditLimit, creditRoom, canBorrow,
+  springRoll, buildOptions, doBuild, drawCards, cardWhenOk, choiceOk, applyChoice, doAutumn, doRepay, salePrice, sellOptions, doSell,
+  doWinter, advance, useUlt, score, grade, validateCard, logIt, mark,
+  AXES, ADVICE, personaAdd, adviceFor, followAdvice, personaType, addPersona };
+/*</ENGINE>*/
+
+
+/* ============================================================
+   ②-A 픽셀 스프라이트 (16×16) — 문자 하나가 픽셀 하나. 팔레트는 글자→색
+   나중에 진짜 PNG로 바꾸려면 drawSprite 대신 <img>를 쓰면 됩니다.
+   ============================================================ */
+const PAL = { '.':null, k:'#1A1410', w:'#FFFFFF', s:'#F2C9A0', y:'#F2C14E', r:'#C8433A', g:'#4BA35C',
+  G:'#6E7378', b:'#3E8FD6', B:'#8CC6F0', c:'#8B5A2B', n:'#2E4A7A', d:'#3A2E3D', p:'#7A2D3A', h:'#4A3222', a:'#8E9AA5', q:'#F8F8F8' };
+const SPR = {
+  albert:{ pal:{h:'#EDEDED',m:'#D6D6D6',c:'#6B4A2B'}, map:[
+'..h.h..hh.h.h...','.hhhhhhhhhhhhh..','hhhhhhhhhhhhhhh.','hhhhssssssssshh.','.hhssssssssssh..','..sskssssskss...','..ssssssssss....','..sssss.ssss....',
+'..ssmmmmmmss....','...sssssss......','....sssss.......','...cc.s.cc......','..cccccccccc....','.cccc.w.ccccc...','.cccc.w.ccccc...','.cccc.w.ccccc...']},
+  sejong:{ pal:{b:'#2B1E14'}, map:[
+'......kkkk......','......kkkk......','......kkkk......','..kkkkkkkkkkkk..','....kkkkkkkk....','....ssssssss....','....skssssks....','....ssssssss....',
+'....sssbbsss....','.....sbbbbs.....','.....bbbbbb.....','....rrbbbbrr....','...rrrrrrrrrr...','..rrrryyyyrrrr..','..rrrrrrrrrrrr..','..rrrrrrrrrrrr..']},
+  sunsin:{ pal:{b:'#2B1E14'}, map:[
+'.......r........','......rrr.......','.....GGGGG......','....GGGGGGG.....','...GGGGGGGGG....','...GsssssssG....','....skssssks....','....ssssssss....',
+'....sssbbsss....','.....sbbbbs.....','.....bbbbbb.....','....aabbbbaa....','...aaaaaaaaaa...','..aaaayyyyaaaa..','..aaaaaaaaaaaa..','..aaaaaaaaaaaa..']},
+  newton:{ pal:{h:'#D8D8D8'}, map:[
+'....hhhhhhhh....','...hhhhhhhhhh...','..hhhhhhhhhhhh..','..hhhssssssshh..','..hhssssssssshh.','..hhskssssksshh.','..hhssssssssshh.','..hhsssss.sshh..',
+'..hhssssssssh...','...hsssssssh....','....sssssss...g.','...nn.s.nn...rr.','..nnnnnnnnn..rr.','.nnnn.w.nnnn....','.nnnn.w.nnnn....','.nnnn.w.nnnn....']},
+  leo:{ pal:{h:'#D0D0D0',b:'#D0D0D0',c:'#5A3A1E'}, map:[
+'....cccccccc....','...cccccccccc...','..cccccccccccc..','...hhhhhhhhhh...','..hhssssssssshh.','..hhskssssksshh.','..hhssssssssshh.','..hbbbbbbbbbbhh.',
+'..hbbbbbbbbbbh..','...bbbbbbbbbb...','...bbbbbbbbbb...','....bbbbbbbb....','...ppbbbbbbpp...','..pppppbbppppp..','..pppppppppppp..','..pppppppppppp..']},
+  marie:{ pal:{h:'#3A2A22',f:'#7CF2A0'}, map:[
+'.....hhhhhh.....','....hhhhhhhh....','...hhhhhhhhhh...','...hhssssssshh..','...hsssssssssh..','...hskssssksh...','....ssssssss....','....sssss.ss....',
+'....ssssssss.f..','.....ssssss.ff..','......ssss.fff..','....dd.ss.ddff..','...dddddddddd...','..dddddwwddddd..','..dddddddddddd..','..dddddddddddd..']},
+  napoli:{ pal:{}, map:[
+'kkkkkkkkkkkkkkkk','.kkkkkkkkkkkkkk.','..kkkkkkyykkkk..','...kkkkkkkkkk...','....ssssssss....','....skssssks....','....ssssssss....','....ssss.sss....',
+'....ssssssss....','.....ssssss.....','....nn.ss.nn....','...nnnnnnnnnn...','..nnnyynnnyynn..','..nnnnnnnnnnnn..','..nnnnnnnnnnnn..','..nnnnnnnnnnnn..']},
+  shake:{ pal:{b:'#4A3222'}, map:[
+'................','.....ssssss.....','....ssssssss....','...hsssssssshh..','..hhssssssssshh.','..hhskssssksshh.','..hhssssssssshh.','...hsssss.ssh...',
+'....ssbbbbss..q.','.....ssbbss..qq.','......ssss..qq..','....wwwwwwwwq...','...wwwwwwwwww...','..ddddwwwwdddd..','..dddddddddddd..','..dddddddddddd..']},
+  warehouse:{ pal:{r:'#8E2F27'}, map:[
+'................','.......rr.......','......rrrr......','.....rrrrrr.....','....rrrrrrrr....','...rrrrrrrrrr...','..rrrrrrrrrrrr..','..cccccccccccc..',
+'..cccyyyyyyccc..','..cccyyyyyyccc..','..ccckkkkkkccc..','..ccckkkkkkccc..','..ccckkkkkkccc..','..ccckkkkkkccc..','..cccccccccccc..','................']},
+  breakwater:{ pal:{g:'#A9AEB3'}, map:[
+'................','................','................','................','........GGGG....','.......GggggG...','......GggggggG..','bb....GggggggG..',
+'bbb...GggggggG..','bbbb.GggggggggG.','bbbbbGggggggggG.','bbbbbGggggggggG.','bbbbbGggggggggG.','bbbbGggggggggggG','bbbbGggggggggggG','bbbbGggggggggggG']},
+  reservoir:{ pal:{g:'#8E9AA5'}, map:[
+'................','................','................','.....gggggg.....','...gggggggggg...','..ggbbbbbbbbgg..','.ggbbbbBBbbbbgg.','.ggbbbBBBBbbbgg.',
+'.ggbbbbBBbbbbgg.','.ggbbbbbbbbbbgg.','..ggbbbbbbbbgg..','...gggggggggg...','.....gggggg.....','................','................','................']},
+  herb:{ pal:{}, map:[
+'................','.......r........','......rrr..g....','...g...r..gg....','..gg..g.g.g.....','...g.ggggg......','....gggggg.g....','..g.ggggggg.....',
+'...ggggggggg....','....ggggggg.....','......ggg.......','....cccccccc....','....cccccccc....','.....cccccc.....','.....cccccc.....','......cccc......']},
+  field2:{ pal:{c:'#6B4425'}, map:[
+'................','................','..y..y..y..y..y.','.yyy.yyy.yyy.yyy','..y..y..y..y..y.','..y..y..y..y..y.','cccccccccccccccc','..y..y..y..y..y.',
+'.yyy.yyy.yyy.yyy','..y..y..y..y..y.','..y..y..y..y..y.','cccccccccccccccc','..y..y..y..y..y.','.yyy.yyy.yyy.yyy','..y..y..y..y..y.','cccccccccccccccc']},
+  market:{ pal:{}, map:[
+'................','................','..rrwwrrwwrrww..','..rrwwrrwwrrww..','..rrwwrrwwrrww..','.c............c.','.c............c.','.c............c.',
+'.c..yy..gg..yy.c','.c..yy..gg..yy.c','.cccccccccccccc.','.cccccccccccccc.','..c..........c..','..c..........c..','..c..........c..','................']},
+};
+function drawSprite(ctx,id,x,y,scale=1){
+  const sp=SPR[id]; if(!sp) return; const pal={...PAL,...sp.pal};
+  sp.map.forEach((row,j)=>{ for(let i=0;i<16;i++){ const c=pal[row[i]]; if(c){ ctx.fillStyle=c; ctx.fillRect(x+i*scale,y+j*scale,scale,scale); } } });
+}
+function spriteCanvas(id,cls=''){ const c=document.createElement('canvas'); c.width=16; c.height=16; c.className=cls; drawSprite(c.getContext('2d'),id,0,0,1); return c; }
+
+/* 데이터 폴더가 없을 때 쓰는 내장 카드 (v0.3 원본 8장) */
+const BUILTIN_CARDS = [{"id": "v3trade", "set": "core", "concept": "riskreturn", "also": [], "event": "trade", "event_ko": "무역철", "difficulty": 2, "season": "summer", "emoji": "⛵", "title": "무역선 선장", "story": "먼바다로 떠나는 무역선 선장이 왔어요. \"금화를 맡기면 돌아올 때 두 배 반으로 갚겠소. 다만… 바다는 알 수 없지.\" 돌아올 확률은 반반이래요.", "choices": [{"text": "맡기지 않는다", "sub": "금화는 그대로", "result": "선장은 어깨를 으쓱하고 떠났어요. 금화는 안전해요.", "isl": "무역선에 아무것도 걸지 않았다"}, {"text": "금화 10닢을 맡긴다", "sub": "절반은 남겨 둔다", "result": "선장이 금화 10닢을 싣고 떠났어요. 가을이 되면 알게 될 거예요.", "isl": "무역선에 금화 일부를 맡겼다", "risk": {"stake": {"gold": 10}, "p": 0.5, "hero": {"sunsin": 1}, "win": {"mul": 2.5, "text": "무역선이 돌아왔어요! 금화 {stake}닢이 {amt}닢이 되어 왔어요."}, "lose": {"mul": 0, "text": "무역선은 돌아오지 않았어요. 맡긴 {stake}닢은 바다에 가라앉았어요."}}}, {"text": "금화를 전부 맡긴다", "sub": "전부 걸면 전부 얻거나, 전부 잃거나", "result": "금고가 텅 비었어요. 봄에 지을 것도, 급할 때 쓸 것도 없어요. 가을까지 기도해요.", "isl": "무역선에 금화 전부를 맡겼다", "risk": {"stake": {"gold": "all"}, "p": 0.5, "hero": {"sunsin": 1}, "win": {"mul": 2.5, "text": "무역선이 돌아왔어요! 금화 {stake}닢이 {amt}닢이 되어 왔어요."}, "lose": {"mul": 0, "text": "무역선은 돌아오지 않았어요. 금화 {stake}닢 전부를 잃었어요."}}}], "teacher": "기대값은 +25%지만 절반 확률로 전액 손실 — \"잃어도 되는 만큼만\"과 몰빵의 차이를 비교하게 한다.", "origin": "v0.3"}, {"id": "v3seed", "set": "core", "concept": "scam", "also": [], "event": "bumper", "event_ko": "풍년", "difficulty": 1, "season": "summer", "emoji": "✨", "title": "황금 씨앗 장수", "story": "번쩍이는 옷을 입은 장수가 왔어요. \"이 황금 씨앗을 심으면 가을에 곡식이 세 배! 오늘만 금화 15닢. 다른 섬 영주들은 벌써 다 샀지요.\"", "choices": [{"text": "산다", "sub": "금화 −15", "result": "씨앗을 심었어요. 정말 세 배가 될까요?", "isl": "황금 씨앗을 샀다", "fx": {"gold": -15}, "later": {"text": "황금 씨앗에서는 아무것도 자라지 않았어요. 장수는 이미 다른 바다로 떠났고요."}}, {"text": "거절한다", "sub": "\"세 배\"는 수상해", "result": "장수는 얼굴을 찡그리고 떠났어요. 나중에 들으니 그 씨앗은 그냥 색칠한 콩이었대요.", "isl": "황금 씨앗을 의심했다"}, {"text": "길드 상인에게 먼저 물어본다", "sub": "급할수록 확인", "result": "길드 상인이 웃으며 말했어요. \"그 사람, 지난달 세 섬에서 쫓겨났어요.\" 금화를 지켰어요.", "isl": "사기 전에 믿을 만한 곳에 물어봤다"}], "teacher": "\"무조건·오늘만·남들도 다 했다\" 세 가지 신호가 모두 들어 있다. 어느 말이 수상했는지 짚어 보게 한다.", "origin": "v0.3"}, {"id": "v3drought", "set": "core", "concept": "reactive", "also": [], "event": "drought", "event_ko": "가뭄", "difficulty": 1, "season": "summer", "emoji": "☀️", "title": "가뭄", "story": "비가 한 달째 오지 않아요. 밭이 갈라지기 시작했어요. 이대로면 가을 수확이 절반으로 줄어요.", "choices": [{"text": "이웃 섬에서 물을 사 온다", "sub": "금화 −10, 수확은 지킴", "result": "물을 사 와 밭을 살렸어요. 저수지가 있었다면 공짜였을 텐데요.", "isl": "닥쳐서 비싸게 물을 샀다", "fx": {"gold": -10}, "ifHas": {"b": "reservoir", "result": "저수지가 있어서 살 필요가 없었네요. 금화만 썼어요."}}, {"text": "하늘에 맡긴다", "sub": "금화는 아낀다", "result": "밭이 말라 갔어요. 가을 수확이 절반으로 줄 거예요.", "isl": "가뭄을 그냥 맞았다", "concept": "insurance", "flag": {"drought": true}, "ifHas": {"b": "reservoir", "result": "저수지 물을 끌어와 밭을 지켰어요. 미리 지어 둔 덕이에요.", "clear": true}}], "teacher": "저수지(15닢)를 미리 지은 섬과 물을 사는 섬(10닢/회)의 비용을 비교: 두 번 오면 사후 대응이 더 비싸다.", "weather": "sun", "origin": "v0.3"}, {"id": "v3carriage", "set": "core", "concept": "needwant", "also": [], "event": "festival", "event_ko": "축제", "difficulty": 1, "season": "summer", "emoji": "🎠", "title": "왕도의 마차 장수", "story": "왕도에서 온 장수가 금박 마차를 팔아요. \"영주라면 이 정도는 타셔야죠. 금화 15닢.\" 섬에는 마차가 달릴 길이 없긴 해요.", "choices": [{"text": "산다", "sub": "금화 −15", "result": "마차는 멋졌어요. 사흘 동안은요. 지금은 항구 옆에 세워져 갈매기 쉼터가 됐어요.", "isl": "길도 없는데 마차를 샀다", "fx": {"gold": -15}}, {"text": "사지 않는다", "sub": "길도 없는데", "result": "장수는 실망했지만 금화 15닢은 금고에 남았어요. 겨울에 이 돈이 어떻게 쓰일지 두고 봐요.", "isl": "마차를 사지 않았다"}], "teacher": "\"영주라면 이 정도는\" — 남의 시선 때문에 사는 소비. 필요한지 묻는 질문 하나면 충분하다.", "origin": "v0.3"}, {"id": "v3guild", "set": "core", "concept": "credit", "also": [], "event": "poor", "event_ko": "흉년", "difficulty": 2, "season": "summer", "emoji": "📜", "title": "길드 상인의 제안", "story": "길드 상인이 장부를 펼쳐요. \"지금 곡식 20섬을 외상으로 드릴게요. 값은 다음 세 가을에 나눠 받지요. 물론 조금 얹어서요.\" 얹는 몫은 신뢰에 따라 달라요.", "choices": [{"text": "외상으로 곡식 20섬을 받는다", "sub": "지금 곡식 +20, 세 가을에 나눠 갚기", "result": "곡식이 넉넉해졌어요. 대신 장부에 이름이 올랐어요. 매 가을 {pay}닢씩 갚아야 해요.", "isl": "곡식을 외상으로 받았다", "loan": {"amount": 20, "give": "grain", "n": 3, "name": "곡식 20섬 외상"}}, {"text": "거절한다", "sub": "지금 곡식으로 충분", "result": "상인은 장부를 덮었어요. \"필요하면 언제든지요.\" 빚 없는 여름이에요.", "isl": "외상 제안을 거절했다"}], "teacher": "곡식을 \"지금\" 받는 대가로 총액이 20→23~25로 는다. 신뢰가 높을수록 얹는 몫이 작은 것을 확인.", "when": {"trustMin": 2}, "origin": "v0.3"}, {"id": "v3neighbor", "set": "core", "concept": "credit", "also": [], "event": "poor", "event_ko": "흉년", "difficulty": 2, "season": "summer", "emoji": "🤝", "title": "이웃 섬 영주", "story": "이웃 섬 영주가 배를 타고 왔어요. \"곡식 10섬만 빌려주게. 가을에 12섬으로 갚겠네.\" 믿을 만한 사람이긴 한데, 그 섬도 형편이 어렵대요.", "choices": [{"text": "빌려준다", "sub": "곡식 −10, 가을에 12섬 (못 받을 수도)", "result": "곡식 10섬을 실어 보냈어요. 가을에 12섬이 돌아올까요?", "isl": "이웃 영주에게 곡식을 빌려줬다", "concept": "riskreturn", "risk": {"stake": {"grain": 10}, "p": 0.7, "win": {"grain": 12, "text": "이웃 영주가 약속대로 곡식 12섬을 갚았어요. 2섬이 더 생겼네요."}, "lose": {"grain": 0, "text": "이웃 섬은 흉년이었대요. 곡식은 돌아오지 않았어요."}}}, {"text": "거절한다", "sub": "우리 겨울도 걱정", "result": "영주는 이해한다며 돌아갔어요. 곡식은 그대로예요.", "isl": "빌려주지 않았다"}], "teacher": "빌려주는 쪽에서 본 신용: 이자(2섬)는 떼일 위험(30%)의 값이다.", "origin": "v0.3"}, {"id": "v3fisher", "set": "core", "concept": "income", "also": [], "event": "calm", "event_ko": "평온한 날", "difficulty": 1, "season": "summer", "emoji": "🎣", "title": "어부의 부탁", "story": "늙은 어부가 찾아왔어요. \"배에 구멍이 났소. 금화 5닢만 대주면, 가을에 잡은 고기를 곡식 8섬 값으로 갚으리다.\"", "choices": [{"text": "금화 5닢을 대준다", "sub": "가을에 곡식 +8", "result": "어부가 고맙다며 배를 고치러 갔어요. 작은 돈이지만 확실한 약속이에요.", "isl": "어부의 배를 고쳐 줬다", "fx": {"gold": -5}, "later": {"grain": 8, "text": "어부가 약속대로 생선을 가득 싣고 왔어요. 곡식 8섬 값이에요."}}, {"text": "거절한다", "sub": "금화 5닢도 아깝다", "result": "어부는 조용히 돌아갔어요. 금화는 그대로예요.", "isl": "어부를 돕지 않았다"}], "teacher": "작고 확실한 수익 — 무역선(크고 불확실)과 짝지어 비교하기 좋다.", "origin": "v0.3"}, {"id": "v3flood", "set": "core", "concept": "diversify", "also": [], "event": "flood", "event_ko": "폭우", "difficulty": 1, "season": "summer", "emoji": "🌧️", "title": "폭우", "story": "사흘 밤낮 비가 쏟아져 항구 쪽 밭이 물에 잠겼어요.", "choices": [{"text": "확인", "sub": "", "result": "밭이 하나뿐이라 피해를 고스란히 입었어요.", "isl": "한쪽 밭이 잠겼다", "fx": {"grain": -8}, "ifHas": {"b": "field2", "fx": {"grain": -4}, "result": "항구 쪽 밭은 잠겼지만 건너편 밭은 멀쩡했어요. 두 곳에 나눠 둔 덕이에요."}}], "teacher": "선택지 없는 카드 — 결과가 봄의 선택(건너편 밭)에 이미 달려 있었다는 것을 보여 준다.", "weather": "rain", "origin": "v0.3"}];
+
+/* ============================================================
+   ③ 카드 불러오기 — data/*.json(웹 서버) → data/cards_bundle.js(파일로 열 때) → 내장 8장
+   ============================================================ */
+let BANK=[], DECK=[], DECKINFO=null, SOURCE='';
+async function loadCards(){
+  const tryJson = async p=>{ const r=await fetch(p,{cache:'no-store'}); if(!r.ok) throw new Error(p+' '+r.status); return r.json(); };
+  try{
+    const [core,cc,deck]=await Promise.all([tryJson('data/cards_core.json'),tryJson('data/cards_cardco.json'),tryJson('data/deck.json')]);
+    BANK=[...core.cards,...cc.cards]; DECKINFO=deck; SOURCE='data/*.json';
+  }catch(e){
+    if(window.CARD_BANK){ BANK=[...window.CARD_BANK.core,...window.CARD_BANK.cardco]; DECKINFO=window.CARD_BANK.deck; SOURCE='data/cards_bundle.js'; }
+    else { BANK=BUILTIN_CARDS; DECKINFO={name:'내장 8장',cards:BUILTIN_CARDS.map(c=>c.id)}; SOURCE='내장 카드 8장 (data 폴더를 찾지 못함)'; }
+  }
+  applyDeck();
+}
+function applyDeck(){
+  const ids = DECKINFO && DECKINFO.cards;
+  DECK = (!ids || ids.includes('all')) ? BANK.slice() : ids.map(id=>BANK.find(c=>c.id===id)).filter(Boolean);
+  const bad=[]; DECK.forEach(c=>bad.push(...validateCard(c))); if(bad.length) console.warn('카드 오류', bad);
+  $('#deck-info').innerHTML = `카드 <b>${DECK.length}</b>장 연결 · 은행 ${BANK.length}장${bad.length?` · <span class="danger">오류 ${bad.length}건</span>`:''}`;
+  $('#btn-demo').hidden = !(DECKINFO && DECKINFO.demo04);
+  startScreen();
+}
+function loadFromFile(file){
+  const rd=new FileReader(); rd.onload=()=>{ try{ const j=JSON.parse(rd.result);
+      const list = j.cards && j.cards[0] && j.cards[0].choices ? j.cards : null;
+      if(list){ const keep=BANK.filter(c=>!list.some(x=>x.id===c.id)); BANK=[...keep,...list]; DECKINFO={...(DECKINFO||{}),name:file.name,cards:list.map(c=>c.id)}; }
+      else if(j.cards){ DECKINFO=j; }
+      SOURCE=file.name; applyDeck();
+    }catch(e){ alertLine('JSON을 읽지 못했어요: '+e.message); } };
+  rd.readAsText(file,'utf-8');
+}
+function alertLine(msg){ $('#deck-info').insertAdjacentHTML('beforeend',`<br><small>${msg}</small>`); }
+
+/* ============================================================
+   ④ 전생의 기억 — 환생해도 남는 것 (이 브라우저에만 저장)
+   넘어오는 건 힘이 아니라 기억: 도감(겪은 개념·만난 손님), 지난 생의 선택, 해금된 동료
+   ============================================================ */
+const META_KEY='islandlord_v05_meta';
+const HERO_ORDER=['albert','sejong','sunsin','newton','leo','marie','napoli','shake'];
+const freshPersona=()=>({r:0,t:0,j:0,n:{r:0,t:0,j:0},last:{r:0,t:0,j:0}});
+function freshMeta(){ return { tier:1, lives:0, done:false, history:[], concepts:[], cards:{}, heroes:HERO_ORDER.slice(0,4), persona:freshPersona(), advice:{given:0,followed:0} }; }
+let META=freshMeta(), META_MEM=true;
+function loadMeta(){ try{ const j=localStorage.getItem(META_KEY); if(j){ META={...freshMeta(),...JSON.parse(j)}; } META_MEM=false; }catch(e){ META_MEM=true; } }
+function saveMeta(){ if(DEMO) return; try{ localStorage.setItem(META_KEY,JSON.stringify(META)); }catch(e){} }
+function resetMeta(){ META=freshMeta(); saveMeta(); startScreen(); }
+
+/* ============================================================
+   ⑤ 화면
+   ============================================================ */
+const $ = q=>document.querySelector(q);
+const fmt = n=>(n>0?'+':n<0?'−':'')+Math.abs(n);
+let S=null, DEMO=null, summerQueue=[], BIRTH=null;
+const goalNow = ()=> DEMO ? 0 : CFG.goals[Math.min(META.tier,CFG.goals.length)-1];
+function clearToast(){ const t=$('#toast'); if(!t) return; t.classList.remove('on'); t.textContent=''; }
+function toast(msg){ const t=$('#toast'); if(!t) return; t.textContent=msg; t.classList.remove('on'); void t.offsetWidth; t.classList.add('on'); }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!==id); window.scrollTo({top:0}); }
+
+/* 섬 씬 */
+const SKY = { 0:['#9ED3E8','#CFEAF3','#3B8FB5','#5FB0D0'], 1:['#4FB3E6','#9EDCF5','#1F7FB4','#3FA0CC'], 2:['#F2A65A','#F8D3A0','#3C6E8A','#5A8DA6'], 3:['#8E9BAA','#C2CAD3','#3F5668','#5A7386'] };
+let tick=0, sceneRAF=null;
+function drawScene(){
+  const c=$('#vn-result-canvas') || $('#vn-scene-canvas') || $('#scene');
+  if(!c) return;
+  const ctx=c.getContext('2d'); const W=c.width,H=c.height;
+  const [sky1,sky2,sea1,sea2]=SKY[S?S.season:0];
+  const w=S?S.weather:'calm', storm=w==='storm';
+  const g=ctx.createLinearGradient(0,0,0,40); g.addColorStop(0,storm?'#3A4452':sky1); g.addColorStop(1,storm?'#6B7684':sky2);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,40);
+  ctx.fillStyle = S&&S.season===3&&w==='calm' ? '#F5F0D0' : '#FFE07A'; if(!storm) ctx.fillRect(126,6,8,8);
+  for(let y=40;y<56;y+=2){ for(let x=0;x<W;x+=4){ const ph=((x/4+(tick>>3)+y)%6); ctx.fillStyle = ph<3?(storm?'#2C4A5E':sea1):(storm?'#4C6E86':sea2); ctx.fillRect(x,y,4,2); } }
+  ctx.fillStyle='rgba(255,255,255,.8)'; for(let x=0;x<W;x+=12){ const ph=((x/12+(tick>>4))%4); if(ph===0) ctx.fillRect(x+(tick>>2)%12,40+((x/12)%3)*4,4,1); }
+  ctx.fillStyle='#E4CF95'; ctx.fillRect(0,56,W,16); ctx.fillStyle='#D2B872'; for(let x=0;x<W;x+=8) ctx.fillRect(x+((x/8)%2)*4,60+((x/8)%3)*3,2,1);
+  if(S){ ['warehouse','breakwater','reservoir','herb','field2','market'].forEach((id,i)=>{ if(has(S,id)) drawSprite(ctx,id,6+i*26,42,1); }); }
+  if(w==='rain'||storm){ ctx.fillStyle='rgba(220,235,255,.7)'; for(let i=0;i<(storm?60:25);i++){ const x=(i*37+tick*3)%W, y=(i*53+tick*5)%H; ctx.fillRect(x,y,1,3); } }
+  if(w==='snow'){ ctx.fillStyle='#fff'; for(let i=0;i<30;i++){ const x=(i*41+(tick>>1))%W, y=(i*29+(tick>>1))%H; ctx.fillRect(x,y,2,2); } }
+  if(w==='sun'){ ctx.fillStyle='rgba(255,230,120,.25)'; ctx.fillRect(0,0,W,40); }
+  if(S && S.lockLeft>0){ ctx.fillStyle='rgba(11,21,38,.35)'; ctx.fillRect(0,0,W,H); }
+  tick++;
+}
+function loopScene(){ drawScene(); sceneRAF=requestAnimationFrame(loopScene); }
+
+/* HUD */
+function hud(bumpKey){
+  $('#seasons').innerHTML = `<b>Y${S.year}</b>`+SEASON_NAMES.map((n,i)=>`<span class="${i===S.season?'now':''}">${n}</span>`).join('')+(DEMO?'<em class="demo">DEMO</em>':`<em class="life">${META.lives+1}번째 생</em>`);
+  $('#v-gold').textContent=S.gold; $('#v-grain').textContent=S.grain; $('#v-cap').textContent=cap(S);
+  $('#v-trust').textContent='♥'.repeat(S.trust)+'♡'.repeat(5-S.trust);
+  if(bumpKey){ const g=$('#g-'+bumpKey); if(g){ g.classList.remove('bump'); void g.offsetWidth; g.classList.add('bump'); } }
+  const slots=$('#slots'); slots.innerHTML='';
+  BUILDINGS.forEach(b=>{ const d=document.createElement('div'); d.className='slot'+(has(S,b.id)?' built':''); d.dataset.id=b.id; d.appendChild(spriteCanvas(b.id)); d.insertAdjacentHTML('beforeend',b.name); slots.appendChild(d); });
+  $('#scene-cap').textContent = S.lockLeft>0 ? `⏳ 지켜보기 ${S.lockLeft}` : `${S.year}Y ${SEASON_EN[S.season]}`;
+  $('#scene-note').textContent = `영지 가치 ${score(S)}${goalNow()?` / 목표 ${goalNow()}`:''}`;
+  $('#hero-who').innerHTML=`<b>${S.hero.name}</b>${S.hero.passive}`;
+  const u=$('#btn-ult'); u.textContent=S.ultUsed?'필살기 사용함':`필살기: ${S.hero.ult}`;
+  u.classList.toggle('used',S.ultUsed); u.disabled = S.ultUsed || !S.hero.phases.includes(S.season) || S.locked || S.lockLeft>0;
+  u.title = S.hero.ultDesc;
+}
+function onUlt(){ const msg=useUlt(S); if(!msg) return; toast(`⚡ ${S.hero.ult} — ${msg}`); hud('gold'); if(S.season===0) spring(); }
+
+/* 진행 */
+function next(){
+  clearToast();
+  if(S.dead) return finish();
+  if(advance(S)) return finish();
+  S.locked=false; S.weather='calm'; hud();
+  if(S.lockLeft>0) return watch();
+  ({0:spring,1:summer,2:autumn,3:winter})[S.season]();
+}
+function line([k,v]){ return `<div class="line"><span>${k}</span><span class="d ${v>0?'good':v<0?'bad':'zero'}">${fmt(v)}</span></div>`; }
+const resultFooter = (lines, label, id='go') => {
+  const effectHtml = formatEffect(lines);
+  return `<div class="vn-result-footer">${effectHtml || '<div></div>'}<div class="vn-confirm-wrap"><button class="vn-confirm" id="${id}">${label}</button></div></div>`;
+};
+function result(title,text,lines,after){
+  hud();
+  const lockNote = S.lockLeft>0 ? `<div class="note lock">⏳ 이제 <b>${S.lockLeft}계절</b> 동안 손을 쓸 수 없어요. 섬이 어떻게 되는지 지켜봐요.</div>` : '';
+  const nextName = after ? '다음 손님' : S.lockLeft>0 ? '지켜보기 시작' : SEASON_NAMES[(S.season+1)%4]+'으로';
+  const actionHtml = resultFooter(lines, S.dead ? '…' : nextName);
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">${title}</span></div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-result-canvas" width="160" height="72"></canvas>
+        <div class="label">${SEASON_EN[S.season]} · 결말</div>
+        <div class="scene-name">${title}</div>
+        <div class="vn-dialogue-box">
+          <div class="vn-speaker">결과</div>
+          <p>${text}</p>
+          ${actionHtml}
+        </div>
+        <div class="vn-choice-box"></div>
+      </div>
+      ${lockNote}
+      ${S.dead?`<div class="note"><span class="danger">길드의 신뢰가 바닥났어요.</span></div>`:''}
+    </div>
+  `;
+  const vnResultCanvas=$('#vn-result-canvas'); if(vnResultCanvas){ const ctx=vnResultCanvas.getContext('2d'); ctx.clearRect(0,0,vnResultCanvas.width,vnResultCanvas.height); drawScene(); }
+  $('#go').addEventListener('click',()=>{ if(after && !S.dead && !S.lockLeft) return after(); next(); }, { once: true });
+}
+function ledger(){ return `<div class="ledger"><b>GUILD LEDGER · 한도 ${creditLimit(S)}닢 중 ${debt(S)}닢 사용</b>${S.loans.map(l=>`<div><span>${l.name}</span><span class="num">${l.remaining}닢 · 매 가을 ${Math.min(l.pay,l.remaining)}</span></div>`).join('')}</div>`; }
+const lockBadge = n => n ? `<span class="tl">⏳ ${n}계절 지켜보기</span>` : '';
+const formatEffect = (lines=[]) => {
+  if(!lines.length) return '';
+  const size = lines.length <= 1 ? 'compact' : lines.length <= 3 ? 'medium' : 'wide';
+  const parts = lines.map(([label,val]) => {
+    const sign = val>0 ? '+' : val<0 ? '-' : '';
+    const abs = Math.abs(val);
+    const unit = label==='금화' || label==='곡식' ? '닢' : '';
+    const className = val>0 ? 'good' : val<0 ? 'bad' : 'zero';
+    return `<span class="effect ${className}">${label} ${sign}${abs}${unit}</span>`;
+  });
+  return `<div class="vn-effect-box ${size}"><b>효과</b><div class="effects">${parts.join('')}</div></div>`;
+};
+
+/* 지켜보기 — 잠긴 계절은 선택 없이 흘러간다 */
+function watch(){
+  hud();
+  const r=autoSeason(S);
+  if(S.season===3){ const k=S.realDisaster; S.weather = k==='storm'?'storm':k==='cold'?'snow':k==='plague'?'rain':'calm';
+    if(k==='storm'){ const sc=$('.scene'); if(sc){ sc.classList.remove('shake'); void sc.offsetWidth; sc.classList.add('shake'); } } }
+  S.locked=true; hud('grain');
+  const actionLabel = S.dead ? '…' : S.lockLeft ? '계속 지켜보기' : '다시 손을 쓸 수 있어요';
+  const lockNote = S.lockLeft ? `<div class="note lock">⏳ 이제 <b>${S.lockLeft}계절</b> 동안 손을 쓸 수 없어요. 섬이 어떻게 되는지 지켜봐요.</div>` : '';
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">⏳ ${S.lockLeft ? '지켜보는 중' : '결과'}</span>${S.lockLeft?`<span class="vn-pill">남은 ${S.lockLeft}</span>`:''}</div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">섬의 운명</div>
+        <div class="scene-name">${r.title}</div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">섬의 운명</div>
+          <p>${r.notes[0] || r.title}</p>
+          ${resultFooter(r.lines, actionLabel, 'go')}
+        </div>
+      </div>
+      ${lockNote}
+      ${r.notes.length>1?`<div class="note">${r.notes.slice(1).join('<br>')}</div>`:''}
+      ${S.dead?`<div class="note"><span class="danger">${S.dead==='starve'?'곡식이 바닥났어요. 손을 쓸 틈도 없었어요.':'길드의 신뢰가 바닥났어요.'}</span></div>`:''}
+    </div>
+  `;
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+  $('#go').addEventListener('click',next, { once: true });
+}
+
+/* 봄 — 짓기 / 항구 게시판에 걸기 / 쉬기 */
+function spring(){
+  hud();
+  springRoll(S);
+  const f=DISASTERS[S.forecast], opts=buildOptions(S), bets=betOptions(S);
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">봄의 제안</span></div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">섬의 겨울 예보</div>
+        <div class="scene-name">${S.year===1?'눈을 떠 보니, 봄이에요':'다시 봄이에요'}</div>
+        <div class="vn-forecast active" id="vn-forecast"><b>WINTER FORECAST</b>${f.emoji} ${f.hint}</div>
+        <div class="vn-dark-overlay"></div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">영주실</div>
+          <p>봄에는 한 가지만 할 수 있어요. 건물을 짓거나, 항구 게시판에 금화를 걸거나. 외상 얹는 몫 ${Math.round(rate(S)*100)}% · 빌릴 수 있는 여유 ${creditRoom(S)}닢.</p>
+          <div class="vn-confirm-wrap"><button class="vn-confirm" id="vn-confirm">확인 ▶</button></div>
+        </div>
+        <div class="vn-choice-box" id="vn-choice-box">
+          <h3 class="sub">짓기</h3><div class="build" id="buildlist"></div>
+          <h3 class="sub">항구 게시판 — 금화 걸기</h3><div class="build" id="betlist"></div>
+          ${S.loans.length?ledger():''}
+          <button class="choice ghost" id="skip">이번 봄은 아무것도 하지 않는다</button>
+        </div>
+      </div>
+    </div>
+  `;
+  $('#vn-confirm').addEventListener('click',()=>{
+    $('#vn-dialogue-box').classList.add('hidden');
+    $('#vn-choice-box').classList.add('active');
+    $('.vn-dark-overlay').classList.add('active');
+  }, { once: true });
+  const bl=$('#buildlist');
+  opts.forEach(o=>{ const b=o.b; const d=document.createElement('div'); d.className='b';
+    const creditTip = S.trust<2?'신뢰가 부족해요':!o.canCredit?'장부 한도가 모자라요':'';
+    d.innerHTML=`<div></div><div><div class="head"><b>${b.name}</b><span class="cost">${o.cost!==b.cost?`<s>${b.cost}</s>`:''}${o.free?'0':o.cost}닢</span></div><p>${b.effect}</p>
+      <div class="pay">${o.free?`<button class="free" data-id="${b.id}" data-pay="free">무료로 짓기</button>`:
+      `<button data-id="${b.id}" data-pay="cash" ${o.canCash?'':'disabled'}>금화로 짓기</button><button class="credit" data-id="${b.id}" data-pay="credit" ${o.canCredit?'':'disabled'} title="${creditTip}">외상으로 짓기</button>`}</div></div>`;
+    d.firstElementChild.appendChild(spriteCanvas(b.id)); bl.appendChild(d); });
+  const betl=$('#betlist');
+  bets.forEach(o=>{ const b=o.b; const d=document.createElement('div'); d.className='b bet';
+    d.innerHTML=`<div class="bemoji">${b.emoji}</div><div><div class="head"><b>${b.name}</b>${lockBadge(b.lock)}</div><p>${b.desc}</p>
+      <div class="pay">${[10,20].map(x=>`<button data-bet="${b.id}" data-stake="${x}" ${o.stakes.includes(x)?'':'disabled'}>${x}닢 걸기</button>`).join('')}</div></div>`;
+    betl.appendChild(d); });
+  document.querySelectorAll('[data-pay]').forEach(btn=>btn.addEventListener('click',()=>{
+    const r=doBuild(S,btn.dataset.id,btn.dataset.pay); if(!r) return toast('장부 한도가 모자라요');
+    S.locked=true; hud(btn.dataset.pay==='cash'?'gold':null); const sl=$(`.slot[data-id="${btn.dataset.id}"]`); if(sl) sl.classList.add('new');
+    $('#vn-choice-box').classList.remove('active');
+    $('#vn-forecast').classList.remove('active');
+    $('.vn-dark-overlay').classList.remove('active');
+    $('#vn-dialogue-box').classList.remove('hidden');
+    result(r.title, r.note, r.lines);
+  }));
+  document.querySelectorAll('[data-bet]').forEach(btn=>btn.addEventListener('click',()=>{
+    const r=doBet(S,btn.dataset.bet,+btn.dataset.stake); S.locked=true; hud('gold');
+    $('#vn-choice-box').classList.remove('active');
+    $('#vn-forecast').classList.remove('active');
+    $('.vn-dark-overlay').classList.remove('active');
+    $('#vn-dialogue-box').classList.remove('hidden');
+    result(r.title, r.note, r.lines);
+  }));
+  $('#skip').addEventListener('click',()=>{ logIt(S,'아무것도 하지 않았다'); personaAdd(S,'rest',[0,-1,0]); S.locked=true; hud();
+    $('#vn-choice-box').classList.remove('active');
+    $('#vn-forecast').classList.remove('active');
+    $('.vn-dark-overlay').classList.remove('active');
+    $('#vn-dialogue-box').classList.remove('hidden');
+    result('조용한 봄','금화를 아꼈어요. 겨울이 그 선택을 평가할 거예요.',[]);
+  });
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+}
+
+/* 여름 */
+function summer(){ summerQueue=drawCards(S); S.cardTotal=summerQueue.length; S.cardIdx=0; showCard(); }
+function showCard(){
+  hud();
+  const card=summerQueue.shift(); if(!card) return result('조용한 여름','손님이 오지 않았어요.',[]); S.cardIdx++;
+  S.weather = card.weather||'calm';
+  const more = summerQueue.length>0, past = META.cards[card.id];
+  const adv = adviceFor(S,card), advCh = adv!=null ? card.choices[adv] : null;
+  const sceneTitle = card.event_ko || card.title || '장면';
+  const choiceHtml = card.choices.map((c,i)=>`<button class="choice${i===adv?' adv':''}" data-i="${i}" ${choiceOk(S,c)?'':'disabled'}><b>${c.text}</b>${c.sub||lockOf(c)?`<small>${c.sub||''} ${lockBadge(lockOf(c))}</small>`:''}</button>`).join('');
+  const adviceHtml = advCh ? `<div class="vn-advice" id="vn-advice"><div class="vn-advice-portrait"></div><div class="vn-advice-copy"><b>조언</b><p>${ADVICE[S.hero.id].say} 「${advCh.text}」 ${S.hero.id==='napoli'?'— 그렇게 하라!':'쪽이 좋겠어요.'}</p></div></div>` : '';
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">${sceneTitle}</span>${S.cardTotal>1?`<span class="vn-pill">손님 ${S.cardIdx}/${S.cardTotal}</span>`:''}</div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">${card.emoji || '✦'} ${card.event_ko || '새로운 장면'}</div>
+        <div class="scene-name">${card.title}</div>
+        ${adviceHtml}
+        <div class="vn-dark-overlay"></div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">${card.title}</div>
+          <p>${card.story}</p>
+          <div class="vn-confirm-wrap"><button class="vn-confirm" id="vn-confirm">확인 ▶</button></div>
+        </div>
+        <div class="vn-choice-box" id="vn-choice-box">${choiceHtml}</div>
+      </div>
+    </div>
+  `;
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+  const portraitWrap=$('#vn-advice .vn-advice-portrait'); if(portraitWrap) portraitWrap.appendChild(spriteCanvas(S.hero.id));
+  $('#vn-confirm').addEventListener('click',()=>{
+    $('#vn-dialogue-box').classList.add('hidden');
+    $('#vn-choice-box').classList.add('active');
+    if($('#vn-advice')) $('#vn-advice').classList.add('active');
+    $('.vn-dark-overlay').classList.add('active');
+  }, { once: true });
+  document.querySelectorAll('#vn-choice-box .choice').forEach(btn=>btn.addEventListener('click',()=>{
+    const ch=card.choices[+btn.dataset.i]; followAdvice(S,adv,+btn.dataset.i,card.choices.filter(c=>choiceOk(S,c)).length); const r=applyChoice(S,card,+btn.dataset.i); S.locked=true;
+    S.choiceLog=(S.choiceLog||[]); S.choiceLog.push([card.id,ch.text]);
+    const k=r.lines.find(l=>l[0]==='금화')?'gold':r.lines.find(l=>l[0]==='곡식')?'grain':null; hud(k);
+    $('#vn-choice-box').classList.remove('active');
+    const adviceEl=$('#vn-advice'); if(adviceEl) adviceEl.classList.remove('active');
+    $('.vn-dark-overlay').classList.remove('active');
+    $('#vn-dialogue-box').classList.remove('hidden');
+    if(more){ S.locked=false; hud(); result(card.title, r.text, r.lines, ()=>{ S.locked=false; hud(); showCard(); }); }
+    else { result(card.title, r.text, r.lines, null); }
+  }));
+}
+
+/* 가을 */
+function autumn(){
+  hud();
+  const r=doAutumn(S); hud('grain');
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">수확의 말</span></div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">가을의 수확</div>
+        <div class="scene-name">수확이 끝났어요</div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">가을</div>
+          <p>수확의 소리가 들립니다. 땀으로 쌓아 둔 결과가 이제 장부로 남습니다.</p>
+          ${resultFooter(r.lines, S.dead ? '…' : '장부의 날 — 약속 지키러 가기')}
+        </div>
+      </div>
+      ${r.notes.length?`<div class="note">${r.notes.join('<br>')}</div>`:''}
+    </div>
+  `;
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+  $('#go').addEventListener('click',()=>S.dead?finish():repay(), { once: true });
+}
+function repay(){
+  S.locked=true; const r=doRepay(S); hud('trust');
+  if(S.dead) return finish();
+  const opts=sellOptions(S), over=Math.max(0,S.grain-cap(S)), wf=winterFood(S), price=salePrice(S);
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">장부의 날</span></div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">길드 장부</div>
+        <div class="scene-name">길드 장부의 날</div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">길드 대리인</div>
+          <p>겨울을 맞기 전, 남길 곡식과 남길 빚을 정해야 해요. 섬 사람들은 먹을 게 필요하고, 가게는 돈이 필요해요.</p>
+          ${resultFooter(r.lines, '확인 ▶', 'vn-confirm')}
+        </div>
+        <div class="vn-choice-box" id="vn-choice-box">
+          <h3 class="sub">겨울에 곡식을 얼마나 남길까요?</h3>
+          <p class="story" style="font-size:15px">겨울 동안 섬사람들이 <b>${wf}섬</b>을 먹어요. 재난이 오면 더 줄 수 있고요. 곡식은 항구에서 1섬에 금화 ${price}닢에 팔려요.${over?` <span class="danger">지금 창고 한도보다 ${over}섬이 많아요. 팔지 않으면 썩어요.</span>`:''}</p>
+          <div class="choices">${opts.map(o=>`<button class="choice" data-sell="${o.n}"><b>${o.label}</b><small>${o.n?`금화 +${o.gold}, `:''}곡식 ${S.grain-o.n}섬 남김${o.n===0&&over?` (${over}섬은 썩음)`:''}${o.label.startsWith('겨울')?' — 재난이 오면 위험':''}</small></button>`).join('')}</div>
+        </div>
+      </div>
+      ${r.notes.length?`<div class="note">${r.notes.join('<br>')}</div>`:''}
+      ${S.loans.length?ledger():''}
+    </div>
+  `;
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+  $('#vn-confirm').addEventListener('click',()=>{
+    $('#vn-dialogue-box').classList.add('hidden');
+    $('#vn-choice-box').classList.add('active');
+  }, { once: true });
+  document.querySelectorAll('[data-sell]').forEach(btn=>btn.addEventListener('click',()=>{
+    const s=doSell(S,+btn.dataset.sell); hud('gold'); result('겨울 준비 끝',s.text,s.lines); }));
+}
+
+/* 겨울 */
+function winter(){
+  hud();
+  S.ultUsed=false;
+  const r=doWinter(S);
+  S.weather = r.key==='storm'?'storm':r.key==='cold'?'snow':r.key==='plague'?'rain':'calm';
+  if(r.key==='storm'){ const sc=$('.scene'); if(sc){ sc.classList.remove('shake'); void sc.offsetWidth; sc.classList.add('shake'); } }
+  S.locked=true; hud('grain');
+  const extra = r.wrong ? `<div class="note">예보와 달랐어요. 예보는 ${DISASTERS[S.forecast].name}이었는데 ${r.d.name}이 왔어요. 그래서 한 가지만 대비하면 위험해요.</div>` : '';
+  const napo = r.starveSaved ? '<div class="note"><span class="danger">곡식이 바닥났어요.</span> 하지만 나폴리가 외쳤어요. "내 사전에 굶주림은 없다!" 다음엔 없어요.</div>' : '';
+  $('#panel').innerHTML = `
+    <div class="vn-stage">
+      <div class="vn-topbar">
+        <div class="left"><span class="vn-pill">Y${S.year}</span><span class="vn-pill gold">${SEASON_EN[S.season]}</span></div>
+        <div class="right"><span class="vn-pill">겨울의 압박</span></div>
+      </div>
+      <div class="vn-scene-wrap">
+        <canvas id="vn-scene-canvas" width="160" height="72"></canvas>
+        <div class="label">겨울의 재난</div>
+        <div class="scene-name">${r.d.emoji} ${r.d.name}${r.key==='calm'?'한 겨울':'이 왔어요'}</div>
+        <div class="vn-dialogue-box" id="vn-dialogue-box">
+          <div class="vn-speaker">제구심</div>
+          <p>${r.text}</p>
+          ${resultFooter(r.lines, S.dead ? '…' : S.year>=S.years ? '이번 생의 기록 보기' : '봄을 기다리기')}
+        </div>
+      </div>
+      ${extra}${napo}
+      ${S.dead?`<div class="note"><span class="danger">곡식이 바닥났어요.</span> 섬사람들이 배를 타고 떠나기 시작했어요.</div>`:''}
+    </div>
+  `;
+  const vnSceneCanvas=$('#vn-scene-canvas'); if(vnSceneCanvas){ const ctx=vnSceneCanvas.getContext('2d'); ctx.clearRect(0,0,vnSceneCanvas.width,vnSceneCanvas.height); drawScene(); }
+  $('#go').addEventListener('click',next);
+}
+
+/* 한 생의 끝 — 연대기 + 목표 판정 + 환생 */
+function finish(){
+  const sc=score(S), goal=goalNow(), ok=passed(S,goal), tier=META.tier;
+  const prev = META.history[META.history.length-1];
+  // 전생 기억 갱신
+  if(!DEMO){
+    META.lives++;
+    const outcome = S.dead ? (S.dead==='starve'?'섬이 비었어요':'배가 끊겼어요') : ok ? `목표 통과(${sc})` : `목표 미달(${sc})`;
+    META.history.push({ life:META.lives, tier, goal, birth:BIRTH?BIRTH.name:'', hero:S.hero.name, score:sc, dead:S.dead, ok, years:S.years });
+    (S.choiceLog||[]).forEach(([id,text])=>{ META.cards[id]={text,outcome}; });
+    META.concepts=[...new Set([...META.concepts,...S.exposed])];
+    addPersona(META.persona,S.persona); META.advice.given+=S.advice.given; META.advice.followed+=S.advice.followed;
+    META.history[META.history.length-1].pv=[S.persona.r,S.persona.t,S.persona.j];
+    const nextHero=HERO_ORDER.find(h=>!META.heroes.includes(h)); if(nextHero) META.heroes.push(nextHero);
+    if(ok){ if(META.tier>=CFG.goals.length) META.done=true; else META.tier++; }
+    saveMeta();
+  }
+  $('#end-hero').classList.toggle('end',!!S.dead||!ok);
+  const T = S.dead==='starve' ? ['섬이 비었어요','곡식이 바닥나 섬사람들이 떠났어요']
+          : S.dead==='trust' ? ['배가 끊겼어요','길드가 더는 섬에 오지 않아요']
+          : ok ? [META.done&&!DEMO?'전설의 영주 — 윤회 완주':'이번 생은 합격','영지를 목표 이상으로 키웠어요'] : ['살아남았지만…','영지 가치가 목표에 못 미쳤어요'];
+  $('#end-eyebrow').textContent = DEMO ? 'DEMO · CHRONICLE' : `${META.lives}번째 생 · ${tier}단계 ${goal?'목표 영지 '+goal:'목표 살아남기'}`;
+  $('#end-title').textContent=T[0]; $('#end-score').textContent=`영지 ${sc}`; $('#end-sub').textContent=T[1]+(debt(S)?` · 남은 빚 ${debt(S)}닢`:'');
+  $('#end-lore').textContent = ok ? (META.done&&!DEMO?'세 번의 시험을 모두 넘었어요. 이제 이 섬의 이야기는 전설로 남아요.':'다음 생에서는 더 큰 영지가 필요해요. 기억은 가지고 가요.')
+    : '다시 눈을 뜨게 될 거예요. 금화도 건물도 사라지지만, 이번 생에서 겪은 일은 기억으로 남아요.';
+  drawSprite($('#end-face').getContext('2d'),S.hero.id,0,0,1);
+  $('#end-heroeval').innerHTML=`<b>${S.hero.name}</b>과 함께한 ${S.years}년 — ${S.hero.evalText}`;
+  // 영지 가치표 (가진 것 − 빚)
+  const ys=S.yearly, mx=Math.max(1,...ys.map(y=>y.have));
+  $('#worth').innerHTML = ys.length ? `<h3>영지 가치표</h3><p>가진 것(금화+곡식+건물)에서 빚을 뺀 만큼이 진짜 영지예요.</p>`+ys.map(y=>`<div class="wbar"><small>${y.year}년 가을</small><div class="wb"><i class="have" style="width:${100*y.have/mx}%"></i><i class="debt" style="width:${100*y.debt/mx}%"></i></div><span class="num">${y.have-y.debt}</span></div>`).join('')+`<div class="wlegend"><i class="have"></i>가진 것 <i class="debt"></i>빚</div>` : '';
+  $('#persona').innerHTML = personaHtml();
+  // 지난 생과 비교
+  $('#compare').innerHTML = prev&&!DEMO ? `<div class="note">지난 생(${prev.birth} · ${prev.hero}): 영지 ${prev.score}${prev.dead?' · 멸망':''} → 이번 생: 영지 ${sc}${S.dead?' · 멸망':''}</div>` : '';
+  $('#timeline').innerHTML = S.log.map(l=>`<div><small>${l.when}</small><span>${l.text}</span></div>`).join('');
+  const rows=[...S.chron.values()];
+  $('#map-rows').innerHTML = rows.length ? rows.map(c=>`<div class="row"><span class="isl">${c.isl}</span><span class="arr">&gt;&gt;</span><span class="real">${c.real}<small>${c.sub}</small></span></div>`).join('') : '<p>이번 생엔 특별한 일이 없었어요.</p>';
+  const seen=S.cardsSeen.map(id=>BANK.find(c=>c.id===id)).filter(Boolean);
+  $('#guide').innerHTML = `<details><summary>선생님·부모님용 — 손님 카드 ${seen.length}장 · 전생 도감 ${META.concepts.length}개 개념</summary>${seen.map(c=>`<div class="gc"><b>${c.emoji||''} ${c.title}</b><span>${(CONCEPT_META[c.concept]||{}).real||c.concept} · 난이도 ${c.difficulty}</span><p>${c.teacher}</p></div>`).join('')}
+    <div class="gc"><b>영주 유형 읽는 법</b><p>세 축 — 위험(안정↔도전) · 시간(현재↔미래) · 판단(자기판단↔타인참조). 카드 선택지·봄 결정·동료 추천을 따랐는지로 점수를 쌓고, 환생 전체를 합쳐 부호로 유형을 정해요. 성향에는 우열이 없고 영지 가치(성과)와 따로 봐요. 누적 점수 위험 ${Math.round((DEMO?S.persona:META.persona).r)} · 시간 ${Math.round((DEMO?S.persona:META.persona).t)} · 판단 ${Math.round((DEMO?S.persona:META.persona).j)} (기준점 보정 전)</p></div>
+    ${!DEMO&&META.history.length?`<div class="gc"><b>지난 생들</b>${META.history.map(h=>`<p>${h.life}생 · ${h.tier}단계(목표 ${h.goal}) · ${h.birth} · ${h.hero} · 영지 ${h.score} ${h.dead?'멸망':h.ok?'통과':'미달'}${h.pv?` · 기울기 ${h.pv.join('/')}`:''}</p>`).join('')}</div>`:''}</details>`;
+  $('#btn-again').textContent = DEMO ? '시작 화면으로' : META.done ? '처음부터 다시 (기억 지우기)' : ok ? `다음 생으로 — ${META.tier}단계 목표 ${goalNow()}` : '다시 눈을 뜬다 (같은 목표)';
+  show('s-end');
+}
+function onAgain(){ if(DEMO){ DEMO=null; return startScreen(); } if(META.done){ resetMeta(); return; } rollBirth(); }
+
+/* 성향 화면 — 이번 생의 기울기(막대) + 지금까지의 나(유형 카드) */
+function pbar(k,v,n){ const A=AXES[k], w=Math.min(50,Math.abs(v)*10);
+  return `<div class="pbar"><span class="pl ${v<0?'on':''}">${A.negE} ${A.neg}</span><div class="pt"><i class="${v<0?'neg':'pos'}" style="${v<0?`right:50%;width:${w}%`:`left:50%;width:${w}%`}"></i><b></b></div><span class="pr ${v>0?'on':''}">${A.pos} ${A.posE}</span><small>${n?`${n}번`:'—'}</small></div>`; }
+function personaHtml(){
+  const L=S.persona, all = DEMO ? L : META.persona, T=personaType(all), lives = DEMO?1:META.lives;
+  const adv = DEMO ? S.advice : META.advice;
+  const blurry = T.blurry.map(k=>AXES[k].name).join('·');
+  return `<div class="persona"><h3>이번 생의 기울기</h3><p>이번 생에서 고른 것들이 어느 쪽으로 기울었는지예요. 맞고 틀린 건 없어요.</p>
+    ${['r','t','j'].map(k=>pbar(k,L[k],L.n[k])).join('')}
+    <div class="ptype"><div class="pe">${T.emoji}</div><div><small>${DEMO?'이번 생만 보면':`지금까지 ${lives}번의 생을 모아 보면`}</small>
+      <b>${T.name}</b>
+      ${T.base?`<p>✔ ${T.base.good}</p><p>☂ ${T.base.care}</p>`:'<p>조금 더 살아 보면 보일 거예요.</p>'}
+      ${T.jd&&T.ax.j.clear?`<p>${T.ax.j.pole==='pos'?'👂':'🧭'} ${T.jd.line}</p>`:''}
+      ${blurry?`<p class="blur">아직 흐릿한 축: ${blurry} — 몇 번 더 살아 보면 또렷해져요.</p>`:''}
+    </div></div>
+    <p class="pnote">영주 유형은 영지 가치와 상관없어요. 어떤 유형이든 섬을 크게 키울 수 있어요.</p>
+    ${adv.given?`<p class="pnote">동료의 말을 ${adv.given}번 중 ${adv.followed}번 따랐어요.</p>`:''}</div>`;
+}
+
+/* 시작 · 주사위 · 동료 */
+function startScreen(){
+  loadMeta();
+  const g=goalNow();
+  $('#meta-info').innerHTML = META.lives
+    ? `지금까지 <b>${META.lives}</b>번 태어났어요 · ${META.tier}단계 목표 <b>${g?'영지 '+g:'살아남기'}</b> · 도감 ${META.concepts.length}개${META.done?' · <b>윤회 완주!</b>':''}`
+    : `첫 번째 생이에요. 목표: <b>살아남기</b> → 영지 ${CFG.goals[1]} → 영지 ${CFG.goals[2]}`;
+  $('#btn-start').textContent = META.lives ? '다시 눈을 뜬다' : '눈을 뜬다';
+  $('#btn-reset').hidden = !META.lives;
+  show('s-start');
+}
+function rollBirth(){
+  DEMO=null; setRng(Math.random);
+  const face=1+Math.floor(Math.random()*6); BIRTH=BIRTHS[face-1];
+  showBirth();
+}
+function showBirth(){
+  $('#dice').textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][BIRTH.face-1];
+  $('#birth-name').textContent=BIRTH.name;
+  $('#birth-text').textContent=BIRTH.text;
+  $('#birth-stats').innerHTML=`<span>금화 <b>${BIRTH.gold}</b></span><span>곡식 <b>${BIRTH.grain}</b></span><span>신뢰 <b>${'♥'.repeat(BIRTH.trust)}</b></span>${BIRTH.loan?`<span>빚 <b>${BIRTH.loan}</b></span>`:''}${BIRTH.built?`<span>창고 있음</span>`:''}`;
+  $('#birth-goal').innerHTML = DEMO ? '시연 — 한 번의 생' : `${META.lives+1}번째 생 · 이번 생의 목표: <b>${goalNow()?`2년 뒤 영지 가치 ${goalNow()} 이상`:'2년 동안 살아남기'}</b>`;
+  show('s-birth');
+}
+function selectScreen(){
+  const pool = DEMO && DEMO.heroes ? DEMO.heroes : META.heroes;
+  const three = DEMO ? pool.map(id=>HEROES.find(h=>h.id===id)) : shuffle(pool.map(id=>HEROES.find(h=>h.id===id))).slice(0,3);
+  const box=$('#select'); box.innerHTML='';
+  three.forEach(h=>{ const b=document.createElement('button'); b.className='hc';
+    b.innerHTML=`<div></div><div><b>${h.name}</b><small>${h.tag}</small><div class="ab"><span>PASSIVE</span>${h.passive}</div><div class="ab" style="margin-top:4px"><span class="u">ULT</span>${h.ult} — ${h.ultDesc}</div></div>`;
+    b.firstElementChild.appendChild(spriteCanvas(h.id)); b.addEventListener('click',()=>startGame(h)); box.appendChild(b); });
+  $('#pool-info').textContent = DEMO ? '' : `함께할 수 있는 사람 ${META.heroes.length}/8명 — 생을 거듭할수록 한 명씩 늘어나요.`;
+  show('s-select');
+}
+function startGame(h){
+  S=newState(h,DEMO?BANK:DECK,DEMO,BIRTH); show('s-play');
+  drawSprite($('#hero-face').getContext('2d'),h.id,0,0,1);
+  hud(); spring(); if(!sceneRAF && !matchMedia('(prefers-reduced-motion: reduce)').matches) loopScene(); else drawScene();
+}
+function startDemo(){
+  DEMO=DECKINFO.demo04; setRng(seeded(20261028));
+  BIRTH=BIRTHS.find(b=>b.id===DEMO.birth)||BIRTHS[2]; showBirth();
+}
+$('#btn-start').addEventListener('click',rollBirth);
+$('#btn-demo').addEventListener('click',startDemo);
+$('#btn-reset').addEventListener('click',()=>{ if(confirmReset()) resetMeta(); });
+$('#btn-birth').addEventListener('click',selectScreen);
+$('#btn-again').addEventListener('click',onAgain);
+$('#btn-ult').addEventListener('click',onUlt);
+$('#file').addEventListener('change',e=>{ if(e.target.files[0]) loadFromFile(e.target.files[0]); });
+function confirmReset(){ const b=$('#btn-reset'); if(b.dataset.armed){ return true; } b.dataset.armed='1'; b.textContent='한 번 더 누르면 모든 전생 기억이 지워져요'; return false; }
+
+const introGate=$('#intro-gate');
+const introFrame=$('#intro-frame');
+const introPlayBtn=$('#intro-play');
+const introSkipBtn=$('#intro-skip');
+const gameApp=$('#game-app');
+const INTRO_SRC_BASE='망한 섬의 영주 애니메틱.html?embed=1';
+const INTRO_FALLBACK_MS=20000;
+let introDone=false;
+let introFallbackTimer=null;
+
+function startGameApp(){
+  if(introDone)return;
+  introDone=true;
+  if(introFallbackTimer){clearTimeout(introFallbackTimer);introFallbackTimer=null;}
+  introPlayBtn.disabled=true;
+  introSkipBtn.disabled=true;
+  if(introGate)introGate.hidden=true;
+  if(gameApp)gameApp.hidden=false;
+  loadMeta();
+  loadCards();
+}
+
+function startIntroPlayback(){
+  if(introDone)return;
+  introPlayBtn.disabled=true;
+  introSkipBtn.disabled=true;
+  introFrame.src=`${INTRO_SRC_BASE}&start=1&v=${Date.now()}`;
+  if(introFallbackTimer)clearTimeout(introFallbackTimer);
+  introFallbackTimer=setTimeout(()=>{
+    if(!introDone){
+      console.warn('Intro finished without animatic:end signal; falling back to game start.');
+      startGameApp();
+    }
+  },INTRO_FALLBACK_MS);
+}
+
+introPlayBtn.addEventListener('click',startIntroPlayback);
+introSkipBtn.addEventListener('click',()=>{ startGameApp(); });
+
+window.addEventListener('message',e=>{
+  if(e.data==='animatic:ended')startGameApp();
+});
+</script>
+</body>
+</html>
+
+</body>
+</html>

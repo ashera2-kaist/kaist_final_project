@@ -1,0 +1,519 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>망한 섬의 영주 애니메틱</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+/* 상영실 레이아웃: 16:9 스크린 하나, 그 아래 컨트롤 바와 컷 리스트. 영상 감상용이라 어두운 단일 테마로 고정 */
+:root{
+  --bg:#15131c; --panel:#1f1b28; --line:#2f2a3a; --fg:#ece6dc; --muted:#a39bac; --accent:#f0b35a;
+  --display:"Black Han Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:16px;padding-block:28px 48px;display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(24px,4vw,36px);line-height:1.25;margin:4px 0 6px;text-wrap:balance}
+.meta{color:var(--muted);font-size:13px;margin:0}
+.screen{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:6px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+canvas{display:block;width:100%;height:100%}
+.play-overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(10,8,14,.3);border:0;cursor:pointer;color:var(--fg);font:inherit;padding:0}
+.play-overlay span{display:flex;align-items:center;gap:10px;padding:12px 22px;border-radius:999px;background:rgba(21,19,28,.82);border:1px solid rgba(240,179,90,.6);font-weight:600}
+.play-overlay:focus-visible span,.btn:focus-visible,.shot:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:#231a10;border-color:var(--accent);font-weight:600;min-width:92px}
+#scrub{flex:1;min-width:150px;accent-color:var(--accent)}
+.tc{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted)}
+.loop{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.shots{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.shots h2{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin:14px 0 4px}
+.shot{display:grid;grid-template-columns:104px 1fr;gap:16px;padding:12px 10px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:inherit;font:inherit;cursor:pointer;border-radius:0}
+.shot:hover{background:rgba(255,255,255,.03)}
+.shot .time{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);padding-top:2px}
+.shot .txt{min-width:0;display:flex;flex-direction:column;gap:2px}
+.shot .t{font-weight:600}
+.shot .n{color:var(--muted);font-size:14px}
+.shot.active{background:var(--panel)}
+.shot.active .time{color:var(--accent)}
+.note{color:var(--muted);font-size:13px;margin:0}
+@media (max-width:520px){.shot{grid-template-columns:1fr;gap:4px}}
+body.embed-mode .wrap{max-width:none;padding:0;gap:0}
+body.embed-mode header,
+body.embed-mode .controls,
+body.embed-mode .shots,
+body.embed-mode .note{display:none}
+body.embed-mode .screen{border-radius:0;box-shadow:none;aspect-ratio:16/9;width:100%;height:auto}
+body.embed-mode .play-overlay{display:none}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">게임 오프닝 트레일러 · 2D 애니메틱 v1</div>
+    <h1>눈 떠 보니, 망한 섬의 열두 살 영주?</h1>
+    <p class="meta">15초 · 16:9 · 5컷 · 무음</p>
+  </header>
+
+  <div class="screen">
+    <canvas id="stage" aria-label="15초 트레일러 애니메틱"></canvas>
+    <button class="play-overlay" id="overlay" type="button"><span>▶ <b id="overlayLabel">튜토리얼 재생</b></span></button>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="playBtn" type="button">재생</button>
+    <button class="btn" id="restartBtn" type="button">처음부터</button>
+    <input type="range" id="scrub" min="0" max="15" step="0.01" value="0" aria-label="재생 위치">
+    <span class="tc" id="tc">00:00.0 / 00:15.0</span>
+    <label class="loop"><input type="checkbox" id="loop"> 반복</label>
+  </div>
+
+  <section class="shots" id="shots">
+    <h2>컷 구성 · 누르면 그 컷부터 재생</h2>
+  </section>
+  <p class="note">소리는 없습니다. 음악 히트 지점(14.2초)은 화면 번쩍임과 흔들림으로 표시했어요.</p>
+</div>
+
+<script>
+const cv=document.getElementById('stage'),ctx=cv.getContext('2d');
+const W=1280,H=720;cv.width=W;cv.height=H;
+const PI=Math.PI,DUR=15;
+const FD='"Black Han Sans","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+const FB='"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+const C={skin:'#f1c7a1',skinSh:'#d49e7a',hair:'#5a3a28',pj:'#7092c2',pjD:'#526c9c',ink:'#2b2230',old:'#e6b894'};
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,k)=>a+(b-a)*k;
+const pr=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const eio=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+const eout=k=>1-Math.pow(1-k,3);
+const back=k=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(k-1,3)+c1*Math.pow(k-1,2);};
+
+function path(p){ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)ctx.lineTo(p[i][0],p[i][1]);}
+function poly(p,c){path(p);ctx.closePath();ctx.fillStyle=c;ctx.fill();}
+function box(x,y,w,h,r,c){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=c;ctx.fill();}
+function circ(x,y,r,c){ctx.beginPath();ctx.arc(x,y,r,0,PI*2);ctx.fillStyle=c;ctx.fill();}
+function ell(x,y,rx,ry,c){ctx.beginPath();ctx.ellipse(x,y,Math.abs(rx),Math.abs(ry),0,0,PI*2);ctx.fillStyle=c;ctx.fill();}
+function line(p,c,w){path(p);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}
+function vgrad(y0,y1,s){const g=ctx.createLinearGradient(0,y0,0,y1);s.forEach((c,i)=>g.addColorStop(i/(s.length-1),c));return g;}
+function fillAll(c){ctx.fillStyle=c;ctx.fillRect(-300,-300,W+600,H+600);}
+function text(s,x,y,size,c,o={}){ctx.font=`${size}px ${o.font||FD}`;ctx.textAlign='center';ctx.textBaseline='middle';
+  if(o.stroke){ctx.lineWidth=o.sw||8;ctx.strokeStyle=o.stroke;ctx.lineJoin='round';ctx.strokeText(s,x,y);}ctx.fillStyle=c;ctx.fillText(s,x,y);}
+function cam(cx,cy,z,dx=0,dy=0,rot=0){ctx.translate(W/2+dx,H/2+dy);ctx.rotate(rot);ctx.scale(z,z);ctx.translate(-cx,-cy);}
+function whiteOver(a){if(a>0){ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.fillRect(0,0,W,H);}}
+function blackOver(a){if(a>0){ctx.fillStyle=`rgba(0,0,0,${a})`;ctx.fillRect(0,0,W,H);}}
+
+/* ---------- 캐릭터 ---------- */
+function head(o={}){
+  const R=44;
+  if(o.back){
+    ell(-43,6,7,11,C.skin);ell(43,6,7,11,C.skin);
+    circ(0,0,R+2,C.hair);
+    const sw=o.sway||0;line([[0,-44],[8+sw*5,-66],[22+sw*8,-58]],C.hair,7);
+    return;
+  }
+  ell(-43,6,8,11,C.skin);ell(43,6,8,11,C.skin);
+  circ(0,0,R,C.skin);
+  ctx.beginPath();ctx.moveTo(-46,0);ctx.bezierCurveTo(-52,-54,52,-58,46,0);
+  [[38,-12],[28,-4],[18,-17],[4,-7],[-10,-19],[-22,-7],[-34,-15]].forEach(p=>ctx.lineTo(p[0],p[1]));
+  ctx.closePath();ctx.fillStyle=C.hair;ctx.fill();
+  line([[0,-44],[8,-66],[22,-58]],C.hair,7);
+  circ(-26,16,7,'rgba(226,116,104,.35)');circ(26,16,7,'rgba(226,116,104,.35)');
+  const ex=15,ey=4,lk=(o.look||0)*3;
+  if(o.eyes==='closed'){
+    ctx.beginPath();ctx.arc(-ex,ey-2,7,.15*PI,.85*PI);
+    ctx.moveTo(ex+7*Math.cos(.15*PI),ey-2+7*Math.sin(.15*PI));ctx.arc(ex,ey-2,7,.15*PI,.85*PI);
+    ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.lineCap='round';ctx.stroke();
+  }else{
+    const w=o.eyes==='wide',rx=w?10:8,ry=w?12:10,p=w?5:6;
+    ell(-ex,ey,rx,ry,'#fff');ell(ex,ey,rx,ry,'#fff');
+    circ(-ex+lk,ey+1,p,C.ink);circ(ex+lk,ey+1,p,C.ink);
+    circ(-ex+lk+2,ey-2,1.8,'#fff');circ(ex+lk+2,ey-2,1.8,'#fff');
+  }
+  const B={worried:[[-25,-12],[-8,-18],[8,-18],[25,-12]],up:[[-25,-20],[-8,-23],[8,-23],[25,-20]],determined:[[-25,-19],[-7,-11],[7,-11],[25,-19]]}[o.brow];
+  if(B){line([B[0],B[1]],C.ink,4);line([B[2],B[3]],C.ink,4);}
+  const m=o.mouth||'smile';
+  if(m==='smile'){ctx.beginPath();ctx.arc(0,20,7,.2*PI,.8*PI);ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.stroke();}
+  else if(m==='o')ell(0,25,5,6.5,C.ink);
+  else if(m==='set')line([[-8,25],[8,23]],C.ink,3.5);
+  else if(m==='sleep')ell(0,24,3,2,C.ink);
+}
+function boy(x,y,s,o={}){
+  ctx.save();ctx.translate(x,y);ctx.rotate(o.rot||0);ctx.scale(s,s);
+  ell(-14,-3,12,6,C.skin);ell(14,-3,12,6,C.skin);
+  box(-24,-72,20,68,9,C.pjD);box(4,-72,20,68,9,C.pjD);
+  box(-34,-134,68,74,22,C.pj);
+  ctx.save();ctx.beginPath();ctx.roundRect(-34,-134,68,74,22);ctx.clip();
+  ctx.fillStyle='rgba(255,255,255,.2)';for(let i=-30;i<34;i+=14)ctx.fillRect(i,-134,5,74);ctx.restore();
+  if(!o.back)poly([[-11,-134],[11,-134],[0,-119]],C.skin);
+  line([[-30,-122],[-44,-94],[-42,-70]],C.pj,17);circ(-42,-66,9,C.skin);
+  const arm=o.arm||'down';
+  if(arm==='point'){line([[30,-122],[50,-100],[14,-104]],C.pj,17);circ(12,-104,9,C.skin);line([[6,-106],[-4,-109]],C.skin,6);}
+  else if(arm==='fist'){line([[30,-122],[58,-112],[56,-150]],C.pj,17);circ(56,-158,13,C.skin);}
+  else{line([[30,-122],[44,-94],[42,-70]],C.pj,17);circ(42,-66,9,C.skin);}
+  ctx.translate(0,-176);head(o);
+  ctx.restore();
+}
+function elder(x,y,s,bow){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ell(-14,-3,13,6,'#4a3b2c');ell(14,-3,13,6,'#4a3b2c');
+  poly([[-40,-2],[40,-2],[30,-84],[-30,-84]],'#6f5f45');
+  ctx.translate(0,-80);ctx.rotate(-bow);
+  box(-32,-84,64,90,22,'#8a7856');
+  ctx.fillStyle='#a8513f';ctx.fillRect(-32,-26,64,11);
+  ctx.save();ctx.translate(0,-124);
+  circ(0,0,38,C.old);
+  ell(-34,-2,11,15,'#efece4');ell(34,-2,11,15,'#efece4');
+  line([[-22,-14],[-6,-12]],'#efece4',6);line([[6,-12],[22,-14]],'#efece4',6);
+  ctx.beginPath();ctx.arc(-13,0,6,1.1*PI,1.9*PI);ctx.moveTo(13+6*Math.cos(1.1*PI),6*Math.sin(1.1*PI));ctx.arc(13,0,6,1.1*PI,1.9*PI);
+  ctx.strokeStyle=C.ink;ctx.lineWidth=3;ctx.lineCap='round';ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-28,12);ctx.quadraticCurveTo(-18,74,0,78);ctx.quadraticCurveTo(18,74,28,12);ctx.quadraticCurveTo(0,26,-28,12);ctx.fillStyle='#f3f0e8';ctx.fill();
+  circ(0,8,6,'#d49a78');ell(-9,16,10,5,'#f3f0e8');ell(9,16,10,5,'#f3f0e8');
+  ctx.restore();
+  line([[-24,-72],[-34,-34],[-10,-22]],'#8a7856',16);circ(-8,-22,9,C.old);
+  ctx.restore();
+}
+function villager(x,y,s,o={}){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  const c=o.c||'#8d7a6a',c2=o.c2||'#7a6858';
+  ell(-12,-3,11,5,'#3e3328');ell(12,-3,11,5,'#3e3328');
+  box(-28,-104,56,102,20,c);
+  if(o.belly){line([[-24,-90],[-30,-60],[-6,-52]],c2,14);line([[24,-90],[30,-60],[6,-52]],c2,14);}
+  else{line([[-24,-90],[-32,-50]],c2,14);line([[24,-90],[32,-50]],c2,14);}
+  ctx.translate(0,-132);
+  circ(0,0,30,o.skin||'#e6bd98');
+  if(!o.hat){ctx.beginPath();ctx.arc(0,-8,31,PI,0);ctx.fillStyle=o.hair||'#6b5040';ctx.fill();}
+  circ(-10,4,3.5,C.ink);circ(10,4,3.5,C.ink);
+  line([[-16,-5],[-6,-9]],C.ink,2.5);line([[6,-9],[16,-5]],C.ink,2.5);
+  ctx.beginPath();ctx.arc(0,20,6,1.15*PI,1.85*PI);ctx.strokeStyle=C.ink;ctx.lineWidth=2.5;ctx.stroke();
+  if(o.hat){ell(0,-20,44,9,'#c9a25a');ell(0,-28,22,14,'#c9a25a');}
+  ctx.restore();
+}
+function house(x,y,s,c,broken){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  box(-40,-60,80,60,3,'#d8c8a8');
+  if(broken){poly([[-50,-58],[-5,-100],[10,-86],[0,-70],[20,-80],[50,-58]],c);
+    ctx.fillStyle='#3a2e28';ctx.fillRect(-26,-44,18,18);line([[-28,-46],[-6,-24]],'#7a5a3a',4);line([[-6,-46],[-28,-24]],'#7a5a3a',4);}
+  else{poly([[-50,-58],[0,-100],[50,-58]],c);ctx.fillStyle='#4a3a30';ctx.fillRect(-26,-44,18,18);}
+  ctx.fillStyle='#5a4535';ctx.fillRect(8,-36,20,36);
+  ctx.restore();
+}
+function stall(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#6d5440';ctx.fillRect(-50,-70,6,70);ctx.fillRect(44,-70,6,70);
+  poly([[-58,-74],[58,-74],[50,-54],[20,-58],[0,-50],[-30,-56],[-58,-54]],'#b86a5a');
+  box(-50,-30,100,16,3,'#8a6a4a');
+  ctx.restore();
+}
+function coin(x,y,spin){const w=Math.abs(Math.cos(spin))*12+2;ell(x,y,w,12,'#9c7a2a');ell(x,y,w*.78,10,'#e8c257');}
+
+/* ---------- 컷 1: 침실 (0–3초) ---------- */
+function sBedroom(lt){
+  const z=1+.16*eio(pr(lt,0,2.3));
+  const surprised=lt>2.15;
+  const shake=(lt>2.15&&lt<2.4)?Math.sin(lt*90)*4:0;
+  ctx.save();cam(700,420,z,shake,0);
+  fillAll('#2b3456');
+  ctx.fillStyle='#222944';ctx.fillRect(-300,560,W+600,500);
+  box(160,110,280,230,8,'#1b2140');
+  ctx.fillStyle=vgrad(122,330,['#1d2a5a','#34457a']);ctx.fillRect(174,124,252,202);
+  circ(350,190,28,'#f1ead0');
+  [[210,160],[260,140],[240,250],[300,280],[395,262],[395,150]].forEach(([a,b])=>circ(a,b,2,'#e8e2c8'));
+  ctx.fillStyle='#1b2140';ctx.fillRect(296,124,8,202);ctx.fillRect(174,222,252,8);
+  box(128,96,60,262,14,'#46507f');box(412,96,60,262,14,'#46507f');
+  ctx.fillStyle='#3a3048';ctx.fillRect(900,200,220,10);
+  [['#8a5a5a',26,60],['#5a7a8a',22,70],['#8a8a5a',30,54],['#6a5a8a',20,66],['#7a6a5a',24,58]].reduce((x,[c,w,h])=>{box(x,200-h,w,h,3,c);return x+w+4;},920);
+  box(540,330,600,130,24,'#6e5139');
+  box(520,440,660,130,28,'#e3ddd0');
+  ell(700,452,96,40,'#f4f0e8');
+  ctx.save();ctx.translate(700,surprised?402:414);ctx.rotate(surprised?-.12:-.3);
+  head({eyes:surprised?'wide':'closed',brow:surprised?'up':null,mouth:surprised?'o':'sleep'});ctx.restore();
+  ctx.beginPath();ctx.roundRect(735,420,460,160,[60,20,20,20]);ctx.fillStyle='#5e8a80';ctx.fill();
+  ctx.fillStyle='rgba(255,240,200,.35)';
+  [[820,470],[900,525],[980,462],[1060,522],[1120,470]].forEach(([a,b])=>{ctx.beginPath();for(let i=0;i<5;i++){const an=-PI/2+i*4*PI/5;ctx.lineTo(a+8*Math.cos(an),b+8*Math.sin(an));}ctx.closePath();ctx.fill();});
+  if(lt<1.7){for(let i=0;i<3;i++){const k=(lt*.7+i/3)%1;ctx.globalAlpha=Math.sin(k*PI)*(1-pr(lt,1.3,1.7));text('z',770+k*60,380-k*90,22+i*6,'#cfd6f0',{font:FB});}ctx.globalAlpha=1;}
+  if(surprised){const k=pr(lt,2.15,2.35);ctx.globalAlpha=k;text('!',770,330-10*back(k),56,'#fff4c8',{stroke:C.ink,sw:6});ctx.globalAlpha=1;}
+  const g=pr(lt,1.3,2.8);
+  if(g>0){const rg=ctx.createRadialGradient(300,225,10,300,225,60+1100*eio(g));rg.addColorStop(0,`rgba(255,255,255,${.95*g})`);rg.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=rg;ctx.fillRect(-300,-300,W+600,H+600);}
+  ctx.restore();
+  whiteOver(pr(lt,2.55,3));
+}
+
+/* ---------- 컷 2: 낡은 항구 건물 (3–6초) ---------- */
+function sHarbor(lt){
+  const pan=-50*eio(pr(lt,0,3));
+  ctx.save();cam(W/2,H/2,1.02,pan,0);
+  fillAll('#6b5240');
+  ctx.strokeStyle='rgba(40,28,20,.45)';ctx.lineWidth=3;
+  for(let x=-256;x<W+256;x+=64){ctx.beginPath();ctx.moveTo(x,-300);ctx.lineTo(x,566);ctx.stroke();}
+  ctx.fillStyle='rgba(255,230,180,.22)';ctx.fillRect(254,60,4,140);ctx.fillRect(574,280,4,110);
+  ctx.fillStyle='#8a6a4b';ctx.fillRect(-300,565,W+600,500);
+  ctx.strokeStyle='rgba(50,34,22,.4)';ctx.lineWidth=2;[598,640,696].forEach(y=>{ctx.beginPath();ctx.moveTo(-300,y);ctx.lineTo(W+300,y);ctx.stroke();});
+  const wx=700,wy=110,ww=440,wh=300;
+  ctx.save();ctx.beginPath();ctx.rect(wx,wy,ww,wh);ctx.clip();
+  ctx.fillStyle=vgrad(wy,wy+wh,['#b9cfd3','#e6dcc2']);ctx.fillRect(wx,wy,ww,wh);
+  ell(790+lt*6,150,50,14,'rgba(255,255,255,.6)');ell(1040+lt*6,170,70,16,'rgba(255,255,255,.5)');
+  ctx.fillStyle='#648c98';ctx.fillRect(wx,300,ww,120);
+  poly([[wx,300],[800,250],[900,262],[1000,240],[wx+ww,280],[wx+ww,332],[wx,332]],'#88a078');
+  house(760,300,.55,'#b87c5c',false);house(830,292,.5,'#8a9ab0',true);house(905,288,.6,'#c9a36a',false);house(985,282,.5,'#a36b6b',true);house(1060,294,.55,'#7f9a8a',false);
+  ctx.fillStyle='#7a6a55';ctx.fillRect(wx,330,ww,80);
+  stall(790,372,.6);stall(890,378,.6);
+  ctx.fillStyle='#6d5440';ctx.fillRect(960,352,170,10);for(let i=0;i<6;i++){if(i===3)continue;ctx.fillRect(968+i*26,362,6,34);}
+  villager(850,404,.28,{c:'#8a7c6a',hat:true});villager(930,408,.26,{c:'#7a6c80'});villager(1020,400,.27,{c:'#6f8a7a',hat:true});
+  ctx.restore();
+  ctx.strokeStyle='#45331f';ctx.lineWidth=20;ctx.strokeRect(wx,wy,ww,wh);
+  ctx.lineWidth=10;ctx.beginPath();ctx.moveTo(wx+ww/2,wy);ctx.lineTo(wx+ww/2,wy+wh);ctx.stroke();
+  poly([[wx+10,wy+10],[wx+120,wy+10],[wx+60,wy+50],[wx+30,wy+120],[wx+10,wy+100]],'rgba(200,225,235,.45)');
+  poly([[wx+ww-10,wy+wh-10],[wx+ww-10,wy+wh-140],[wx+ww-60,wy+wh-60],[wx+ww-150,wy+wh-10]],'rgba(200,225,235,.4)');
+  line([[wx+ww/2+8,wy+40],[wx+ww/2+60,wy+90],[wx+ww/2+50,wy+150]],'rgba(230,240,245,.7)',2);
+  poly([[wx,wy+wh],[wx+ww,wy+wh],[640,720],[260,720]],'rgba(255,238,200,.10)');
+  box(110,470,140,96,6,'#5a4330');ctx.strokeStyle='rgba(0,0,0,.25)';ctx.lineWidth=3;ctx.strokeRect(116,476,128,84);line([[116,476],[244,560]],'rgba(0,0,0,.25)',3);
+  ell(1190,606,56,15,'#a58a5e');ell(1190,598,44,11,'#8f7650');
+  const e=eio(pr(lt,.55,1.55)),s=1.35;
+  let look=0;if(lt>1.6)look=-1;if(lt>2.1)look=1;
+  boy(520,600-46*(1-e),s,{rot:lerp(-PI/2,0,e),eyes:lt<.35?'closed':'open',look,brow:'worried',mouth:'o'});
+  for(let i=0;i<18;i++){const px=(i*137+lt*20*(i%3+1))%600+620,py=(i*89+lt*14*(i%2+1))%330+230;circ(px,py,1.6+(i%3),'rgba(255,240,210,.35)');}
+  if(lt>1.9){const k=pr(lt,1.9,2.1);ctx.globalAlpha=k;text('?',610,262-10*back(k),62,'#fff',{stroke:C.ink,sw:6});ctx.globalAlpha=1;}
+  ctx.restore();
+  whiteOver(1-pr(lt,0,.5));
+}
+
+/* ---------- 컷 3: 마을회관 · 빈 금고 (6–9초) ---------- */
+function speech(x,y,s,k){ctx.save();ctx.translate(x,y);const z=.8+.2*back(k);ctx.scale(z,z);
+  box(-120,-44,240,88,40,'#fbf6ea');poly([[20,38],[60,38],[70,80]],'#fbf6ea');text(s,0,3,44,C.ink);ctx.restore();}
+function sHall(lt){
+  if(lt>=1.6){chest(lt-1.6);return;}
+  const sh=(lt>.85&&lt<1.1)?Math.sin(lt*80)*5:0;
+  ctx.save();cam(W/2,H/2,1+.05*pr(lt,0,1.6),sh,0);
+  fillAll('#7a6552');
+  ctx.fillStyle='#5f5248';ctx.fillRect(-300,560,W+600,500);
+  ctx.strokeStyle='rgba(30,24,20,.3)';ctx.lineWidth=2;
+  for(let x=-220;x<W+220;x+=110){ctx.beginPath();ctx.moveTo(x,560);ctx.lineTo(x+(x-640)*.3,780);ctx.stroke();}
+  [[300,120],[920,120]].forEach(([a,b])=>{box(a,b,60,160,30,'#e6d6a8');poly([[a,b+160],[a+60,b+160],[a+160,560],[a-60,560]],'rgba(255,236,190,.12)');});
+  box(150,60,70,500,6,'#8f7a62');box(1060,60,70,500,6,'#8f7a62');
+  ctx.fillStyle='#8a3d3a';path([[570,40],[710,40],[710,260],[690,240],[670,262],[650,236],[625,258],[600,240],[570,262]]);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#6b2e2c';ctx.fillRect(560,34,160,12);
+  circ(640,140,34,'rgba(233,200,120,.55)');line([[640,118],[640,166]],'#8a3d3a',6);line([[622,154],[640,168],[658,154]],'#8a3d3a',5);line([[628,126],[652,126]],'#8a3d3a',5);
+  line([[960,40],[990,90],[975,130]],'rgba(40,30,20,.35)',3);
+  elder(820,610,1.3,.85*eio(pr(lt,.15,.6)));
+  const pt=lt>.8;
+  boy(420,610,1.3,{eyes:'wide',brow:'up',mouth:'o',arm:pt?'point':'down',look:pt?0:1});
+  if(lt>.35){const k=pr(lt,.35,.5);ctx.globalAlpha=k;speech(760,190,'영주님!',k);ctx.globalAlpha=1;}
+  if(pt){const k=pr(lt,.85,1);ctx.globalAlpha=k;text('?!',470,280-12*back(k),60,'#fff4c8',{stroke:C.ink,sw:7});ctx.globalAlpha=1;}
+  ctx.restore();
+}
+function chest(lt){
+  ctx.save();cam(640,440,1.05-.05*pr(lt,0,1.4));
+  fillAll('#2e2521');
+  const rg=ctx.createRadialGradient(640,380,40,640,380,600);rg.addColorStop(0,'rgba(255,214,150,.28)');rg.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=rg;ctx.fillRect(-300,-300,W+600,H+600);
+  ctx.fillStyle='#4d3b2f';ctx.fillRect(-300,590,W+600,500);
+  ell(640,592,260,26,'rgba(0,0,0,.35)');
+  const o=eout(pr(lt,.1,.55));
+  box(452,366,376,24+34*o,6,'#140e0b');
+  box(440,386,400,200,18,'#8a5a34');
+  ctx.fillStyle='#b8995a';ctx.fillRect(500,386,18,200);ctx.fillRect(762,386,18,200);
+  box(612,420,56,64,8,'#c9a85e');circ(640,446,8,'#3a2a1a');ctx.fillStyle='#3a2a1a';ctx.fillRect(636,446,8,20);
+  ctx.save();ctx.translate(640,386-150*o);ctx.rotate(-.08*o);
+  ctx.beginPath();ctx.roundRect(-205,-90,410,92,[60,60,8,8]);ctx.fillStyle=o>.5?'#6b4428':'#94623a';ctx.fill();
+  ctx.fillStyle='#b8995a';ctx.fillRect(-140,-88,18,90);ctx.fillRect(122,-88,18,90);
+  ctx.restore();
+  if(o>.6){ctx.globalAlpha=pr(lt,.55,.8);line([[468,372],[520,398]],'rgba(230,230,230,.6)',1.5);line([[468,388],[512,374]],'rgba(230,230,230,.6)',1.5);ctx.globalAlpha=1;}
+  if(lt>.4){const k=pr(lt,.4,1.2);for(let i=0;i<8;i++){const a=i/8*PI+PI;ctx.globalAlpha=(1-k)*.5;circ(640+Math.cos(a)*(40+180*k),370+Math.sin(a)*(20+60*k),10+14*k,'#cbb89a');}ctx.globalAlpha=1;}
+  [[-1,.55,0],[1,.62,1],[1,.7,2]].forEach(([d,t0,i])=>{if(lt<t0)return;const k=lt-t0;
+    const x=640+d*(60+i*20)+d*k*(260+i*60);let y;
+    if(k<.25)y=386+(578-386)*Math.pow(k/.25,2);else{const b=k-.25;y=578-Math.abs(Math.sin(b*14))*40*Math.exp(-b*5);}
+    coin(x,y,k*20+i);});
+  if(lt>.75){const k=pr(lt,.75,1);ctx.globalAlpha=k*.9;text('텅…',640,96,60,'#efe2c6',{stroke:'#2e2521',sw:6});ctx.globalAlpha=1;}
+  ctx.restore();
+}
+
+/* ---------- 컷 4: 위기 몽타주 (9–12초) ---------- */
+function cutHungry(l){
+  fillAll('#8b7c69');
+  ctx.strokeStyle='rgba(60,48,38,.25)';ctx.lineWidth=2;
+  for(let y=60,r=0;y<540;y+=44,r++){ctx.beginPath();ctx.moveTo(-100,y);ctx.lineTo(W+100,y);ctx.stroke();for(let x=(r%2)*60-100;x<W+100;x+=120){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+44);ctx.stroke();}}
+  ctx.fillStyle='#6b5f52';ctx.fillRect(-300,540,W+600,500);
+  villager(500,610,1.5,{c:'#8d7a6a',c2:'#7a6858',belly:true,hat:true});
+  villager(780,620,1.4,{c:'#6f7f8a',c2:'#5f6f7a',belly:true,hair:'#4a3a30'});
+  ell(640,652,70,16,'#a5957e');ell(640,646,56,10,'#7d6f5d');
+  text('꼬르륵…',930+Math.sin(l*40)*4,300,42,'#fff4e0',{stroke:C.ink,sw:7});
+}
+function cutShelves(l){
+  fillAll('#5b4a3e');
+  ctx.fillStyle='#8a6a4a';ctx.fillRect(270,220,20,440);ctx.fillRect(990,220,20,440);
+  for(let i=0;i<3;i++){box(280,260+i*130,720,18,4,'#8a6a4a');ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(280,278+i*130,720,8);}
+  box(830,188,54,70,12,'rgba(210,225,225,.3)');
+  line([[1000,230],[930,240]],'rgba(230,230,230,.4)',1.5);line([[1000,230],[960,280]],'rgba(230,230,230,.4)',1.5);line([[945,238],[975,262]],'rgba(230,230,230,.4)',1.5);
+  line([[590,34],[580,110]],'#3a2e26',3);line([[690,34],[700,110]],'#3a2e26',3);
+  ctx.save();ctx.translate(640,146);ctx.rotate(Math.sin(l*8)*.05);box(-110,-38,220,76,8,'#e9dcbd');text('품절',0,2,48,'#a4433b');ctx.restore();
+}
+function cutBroken(){
+  ctx.fillStyle=vgrad(0,560,['#a8b3b0','#d8cdb6']);ctx.fillRect(-300,-300,W+600,860);
+  ctx.fillStyle='#7a6f5f';ctx.fillRect(-300,560,W+600,500);
+  house(640,580,3.4,'#a06868',true);
+  house(1080,580,1.6,'#8a9aa8',true);
+  [[400,572,20],[450,582,14],[870,576,18],[910,586,12]].forEach(([a,b,r])=>circ(a,b,r,'#8b7e6c'));
+  line([[360,592],[500,544]],'#7a5a3a',10);line([[840,604],[960,562]],'#7a5a3a',10);
+}
+function cutHarbor(l){
+  ctx.fillStyle=vgrad(-100,430,['#a9b6b8','#dcd2bc']);ctx.fillRect(-300,-300,W+600,730);
+  const sea=vgrad(430,720,['#5f8795','#3f6070']);ctx.fillStyle=sea;ctx.fillRect(-300,430,W+600,500);
+  for(let i=0;i<6;i++)box(100+i*190+Math.sin(l*6+i)*10,450+(i*37)%120,80,4,2,'rgba(255,255,255,.25)');
+  ctx.save();ctx.translate(1000,540);ctx.rotate(-.35);
+  poly([[-130,-30],[130,-30],[100,20],[-100,20]],'#8a5a3e');line([[0,-30],[0,-200]],'#5a4030',8);poly([[4,-190],[4,-80],[80,-100]],'rgba(235,225,200,.7)');
+  ctx.restore();
+  ctx.fillStyle=sea;ctx.fillRect(840,548,460,200);
+  ctx.fillStyle='#6a5140';ctx.fillRect(-300,480,740,18);ctx.fillRect(580,480,240,18);
+  for(let x=-140;x<820;x+=80){if(x>=440&&x<580)continue;ctx.fillRect(x,498,14,90);}
+  ctx.save();ctx.translate(500,520);ctx.rotate(.5);ctx.fillRect(-7,0,14,90);ctx.restore();
+  line([[300,160],[315,170],[330,160]],'#4a4a4a',3);line([[360,130],[372,138],[384,130]],'#4a4a4a',3);
+}
+function cutMap(l){
+  fillAll('#382d27');
+  ctx.save();ctx.translate(640,360);ctx.rotate(-.03);
+  box(-400,-290,800,580,14,'#e7d5a8');
+  ctx.strokeStyle='rgba(120,90,50,.35)';ctx.lineWidth=2;ctx.strokeRect(-380,-270,760,540);
+  ctx.beginPath();ctx.moveTo(-260,40);ctx.bezierCurveTo(-300,-120,-120,-230,40,-190);ctx.bezierCurveTo(220,-170,320,-60,260,60);ctx.bezierCurveTo(220,190,20,230,-100,190);ctx.bezierCurveTo(-200,160,-240,120,-260,40);ctx.closePath();
+  ctx.fillStyle='#b9c38e';ctx.fill();ctx.setLineDash([10,8]);ctx.strokeStyle='#7c6a48';ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);
+  [[-120,-40],[-60,-80],[20,-20],[100,-90],[-20,80]].forEach(([a,b])=>box(a-8,b-8,16,16,3,'#7a5a44'));
+  text('N',320,-220,34,'#7c6a48');line([[320,-196],[320,-150]],'#7c6a48',3);
+  [[-150,-10],[60,-120],[180,20],[-40,120],[110,130]].forEach(([a,b],i)=>{const k=pr(l,.05+i*.07,.15+i*.07);if(k<=0)return;
+    ctx.save();ctx.translate(a,b);const s=back(k);ctx.scale(s,s);poly([[0,-30],[28,20],[-28,20]],'#c9443a');text('!',0,4,28,'#fff');ctx.restore();});
+  ctx.restore();
+}
+function cutBoy(l){
+  const rg=ctx.createRadialGradient(640,360,50,640,360,700);rg.addColorStop(0,'#6a5476');rg.addColorStop(1,'#2a2236');ctx.fillStyle=rg;ctx.fillRect(-300,-300,W+600,H+600);
+  const det=l>.28,jit=det?0:Math.sin(l*60)*3;
+  box(470+jit,500,340,300,90,C.pj);
+  ctx.save();ctx.translate(640+jit,390);ctx.scale(2.5,2.5);
+  head({eyes:det?'open':'wide',brow:det?'determined':'worried',mouth:det?'set':'o'});
+  if(!det)ell(50,-10,5,8,'rgba(170,215,240,.9)');
+  ctx.restore();
+  if(!det){['!','?','!'].forEach((s,i)=>text(s,380+i*260,170+(i%2)*60+Math.sin(l*20+i)*6,46,'#fff4c8',{stroke:C.ink,sw:6}));}
+  else{const k=eout(pr(l,.28,.5)),fx=920,fy=lerp(840,560,k);
+    line([[1080,840],[fx+10,fy+40]],C.pj,70);
+    circ(fx,fy,52,C.skin);line([[fx-30,fy-24],[fx+26,fy-24]],C.skinSh,4);line([[fx-34,fy-2],[fx+10,fy-2]],C.skinSh,3);
+    const a=pr(l,.45,.55);if(a>0){ctx.globalAlpha=a;for(let i=0;i<8;i++){const an=i/8*PI*2;line([[fx+Math.cos(an)*80,fy+Math.sin(an)*80],[fx+Math.cos(an)*112,fy+Math.sin(an)*112]],'#ffe1a0',6);}ctx.globalAlpha=1;}
+  }
+}
+const CUTS=[[0,.45,cutHungry],[.45,.9,cutShelves],[.9,1.35,cutBroken],[1.35,1.8,cutHarbor],[1.8,2.35,cutMap],[2.35,3.01,cutBoy]];
+function sMontage(lt){
+  const i=Math.max(0,CUTS.findIndex(c=>lt<c[1]));const c=CUTS[i];const k=pr(lt,c[0],c[1]);
+  ctx.save();cam(W/2,H/2,1.1-.1*eout(k),0,0,(i%2?1:-1)*.015*(1-k));
+  c[2](lt-c[0],k);
+  ctx.restore();
+  whiteOver(.35*(1-pr(lt-c[0],0,.12)));
+}
+
+/* ---------- 컷 5: 석양 언덕 · 타이틀 (12–15초) ---------- */
+function sSunset(lt){
+  const k=eio(pr(lt,0,3));
+  const hit=lt>2.15?pr(lt,2.15,2.5):0;
+  const sh=(lt>2.15&&lt<2.45)?Math.sin(lt*70)*8*(1-hit):0;
+  ctx.save();ctx.translate(sh,0);
+  ctx.fillStyle=vgrad(0,440,['#4f4476','#b7707a','#eca77a','#f6cf92']);ctx.fillRect(-40,-40,W+80,490);
+  const sx=860-20*k,sy=420;
+  const sg=ctx.createRadialGradient(sx,sy,20,sx,sy,280);sg.addColorStop(0,'rgba(255,225,170,.7)');sg.addColorStop(1,'rgba(255,225,170,0)');ctx.fillStyle=sg;ctx.fillRect(-40,-40,W+80,H+80);
+  circ(sx,sy,64,'#ffe2a8');
+  ell(300-30*k,150,140,16,'rgba(255,210,190,.35)');ell(1000-30*k,110,180,14,'rgba(255,210,190,.3)');
+  ctx.fillStyle=vgrad(420,720,['#8d6f8e','#4a4468']);ctx.fillRect(-40,420,W+80,340);
+  for(let i=0;i<7;i++){const w=90-i*10;box(sx-w/2+Math.sin(lt*3+i)*6,434+i*16,w,4,2,'rgba(255,220,170,.55)');}
+  ctx.save();cam(W/2,H/2,1+.08*k,50*k,0);
+  ctx.beginPath();ctx.moveTo(-100,560);ctx.lineTo(-100,500);ctx.quadraticCurveTo(300,410,640,470);ctx.quadraticCurveTo(900,500,1400,490);ctx.lineTo(1400,560);ctx.closePath();ctx.fillStyle='#5a4b6c';ctx.fill();
+  const HS=[[430,440,1,0],[480,446,.9,1],[540,452,1.1,0],[600,460,.9,0],[660,466,1,1],[720,472,.9,0],[780,480,1,0],[840,484,.8,1]];
+  HS.forEach(([x,y,s,b])=>{ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    ctx.fillStyle='#43385a';ctx.fillRect(-18,-24,36,26);
+    if(b)poly([[-22,-22],[-4,-40],[4,-32],[0,-26],[10,-30],[22,-22]],'#43385a');else poly([[-22,-22],[0,-42],[22,-22]],'#43385a');
+    if(!b){ctx.fillStyle='rgba(255,207,122,.85)';ctx.fillRect(-10,-16,7,7);}
+    ctx.restore();});
+  ctx.fillStyle='#3e3552';ctx.fillRect(880,488,180,6);for(let i=0;i<6;i++){if(i===2)continue;ctx.fillRect(886+i*32,494,5,22);}
+  box(1100,420,20,70,3,'#43385a');poly([[1094,420],[1126,420],[1110,400]],'#43385a');
+  ctx.restore();
+  ctx.save();cam(W/2,H/2,1+.22*k,110*k,34*k);
+  ctx.beginPath();ctx.moveTo(-300,800);ctx.lineTo(-300,660);ctx.quadraticCurveTo(200,540,420,560);ctx.quadraticCurveTo(640,575,960,800);ctx.closePath();ctx.fillStyle='#2f2a44';ctx.fill();
+  for(let i=0;i<14;i++){const gx=40+i*60,gy=gx<420?640-(gx/420)*80:560+(gx-420)*.35;const sw=Math.sin(lt*3+i)*5;line([[gx,gy],[gx+sw,gy-18]],'#3d3656',4);line([[gx+8,gy],[gx+8+sw,gy-12]],'#3d3656',3);}
+  boy(412,562,.62,{back:true,sway:Math.sin(lt*4)});
+  ctx.restore();
+  ctx.restore();
+  const a1=pr(lt,.6,1);
+  if(a1>0){ctx.save();ctx.translate(W/2,168);const s=lerp(1.3,1,eout(a1));ctx.scale(s,s);ctx.globalAlpha=a1;
+    ctx.shadowColor='rgba(40,20,40,.6)';ctx.shadowBlur=20;text('눈 떠 보니, 망한 섬의 열두 살 영주?',0,0,56,'#fff6e6',{stroke:'#3a2540',sw:10});ctx.restore();}
+  const a2=pr(lt,1.6,1.95);
+  if(a2>0){ctx.save();ctx.translate(W/2,256);const s=lerp(.7,1,back(a2))+(hit>0?.08*(1-hit):0);ctx.scale(s,s);ctx.globalAlpha=a2;
+    text('이 섬을 살려야 한다.',0,0,46,'#ffd27a',{stroke:'#3a2540',sw:9});ctx.restore();}
+  whiteOver(hit>0?.45*(1-hit):0);
+  blackOver(pr(lt,2.4,3));
+}
+
+function render(t){
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.clearRect(0,0,W,H);
+  if(t<3)sBedroom(t);else if(t<6)sHarbor(t-3);else if(t<9)sHall(t-6);else if(t<12)sMontage(t-9);else sSunset(Math.min(t,DUR)-12);
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;
+  const v=ctx.createRadialGradient(W/2,H/2,H*.45,W/2,H/2,H);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.45)');ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#000';ctx.fillRect(0,0,W,34);ctx.fillRect(0,H-34,W,34);
+}
+
+/* ---------- 플레이어 ---------- */
+const SHOTS=[
+  {a:0,b:3,t:'침실 · 흰 빛',n:'잠든 소년 클로즈업, 카메라가 천천히 다가간다. 창밖에서 흰 빛이 번지고 소년이 눈을 번쩍 뜬다.'},
+  {a:3,b:6,t:'낡은 항구 건물',n:'하드 컷. 나무 바닥에서 일어나 두리번거린다. 깨진 창 너머로 섬마을, 빈 좌판, 걱정스러운 주민들.'},
+  {a:6,b:9,t:'마을회관 · 빈 금고',n:'노인이 깊이 절하며 "영주님!" 소년은 자기를 가리키며 당황. 금고를 열자 텅 비어 있고 동전 몇 개가 굴러간다.'},
+  {a:9,b:12,t:'위기 몽타주',n:'배고픈 주민, 빈 진열대, 무너진 집, 부서진 항구, 경고 표시가 뜨는 섬 지도. 압도된 소년이 주먹을 꽉 쥔다.'},
+  {a:12,b:15,t:'석양 언덕 · 타이틀',n:'언덕 위 소년의 뒷모습 쪽으로 카메라가 다가간다. 타이틀 두 줄, 14.2초 음악 히트, 페이드 아웃.'}
+];
+const $=id=>document.getElementById(id);
+const playBtn=$('playBtn'),scrub=$('scrub'),tc=$('tc'),overlay=$('overlay'),loopEl=$('loop');
+const params=new URLSearchParams(location.search);
+const EMBED_MODE=params.get('embed')==='1'||window.parent!==window;
+const AUTOSTART=params.get('start')==='1';
+let t=0,playing=false,last=0,first=true;
+
+if(EMBED_MODE){
+  document.body.classList.add('embed-mode');
+  overlay.hidden=true;
+  if(window.parent!==window)window.parent.postMessage('animatic:ready','*');
+}
+const pad=n=>String(n).padStart(2,'0');
+const fmtTC=x=>`00:${pad(Math.floor(x))}.${Math.floor((x%1)*10)}`;
+SHOTS.forEach((s,i)=>{const b=document.createElement('button');b.type='button';b.className='shot';b.id='shot'+i;
+  b.innerHTML=`<span class="time">${pad(s.a)}.0 – ${pad(s.b)}.0초</span><span class="txt"><span class="t">${i+1}. ${s.t}</span><span class="n">${s.n}</span></span>`;
+  b.addEventListener('click',()=>{first=false;t=s.a;play();});$('shots').appendChild(b);});
+function syncUI(){
+  scrub.value=t;tc.textContent=`${fmtTC(Math.min(t,DUR))} / 00:15.0`;
+  playBtn.textContent=playing?'일시정지':'재생';
+  const cur=SHOTS.findIndex(s=>t<s.b);const idx=cur<0?4:cur;
+  SHOTS.forEach((_,i)=>$('shot'+i).classList.toggle('active',!first&&i===idx));
+}
+function frame(now){
+  if(!playing)return;
+  t+=Math.min(.1,(now-last)/1000);last=now;
+  if(t>=DUR){
+    t=DUR;playing=false;render(t);syncUI();
+    if(window.parent!==window){
+      window.parent.postMessage('animatic:ended','*');
+    }
+    return;
+  }
+  render(t);syncUI();requestAnimationFrame(frame);
+}
+function play(){if(t>=DUR)t=0;playing=true;overlay.hidden=true;last=performance.now();syncUI();requestAnimationFrame(frame);}
+function pause(){playing=false;syncUI();}
+overlay.addEventListener('click',()=>{if(first){first=false;t=0;}play();});
+playBtn.addEventListener('click',()=>{if(playing)pause();else{if(first){first=false;t=0;}play();}});
+$('restartBtn').addEventListener('click',()=>{first=false;t=0;play();});
+scrub.addEventListener('input',()=>{first=false;playing=false;overlay.hidden=true;t=parseFloat(scrub.value);render(t);syncUI();});
+window.startAnimatic=()=>{
+  first=false;t=0;play();
+  if(EMBED_MODE&&window.parent!==window)window.parent.postMessage('animatic:started','*');
+};
+window.addEventListener('message',e=>{if(e.data==='animatic:start')window.startAnimatic();});
+
+const POSTER=14.0;
+render(POSTER);syncUI();
+if(AUTOSTART)window.startAnimatic();
+if(document.fonts&&document.fonts.load){document.fonts.load('56px "Black Han Sans"').then(()=>{if(first)render(POSTER);else render(t);}).catch(()=>{});}
+</script>
+
+</body></html>
