@@ -178,6 +178,98 @@
     hint('내려받았어요. 다운로드 폴더의 "' + state.file.name + '"를 카카오톡이나 메일에 붙여 보내면 돼요.');
   }
 
+  /* ============================================================
+     카카오톡 안 브라우저(인앱) — 2026-10-27 추가
+     안드로이드 카카오톡 인앱 브라우저는 게임이 만든 파일(blob:)을 저장하지 못해 "지원하지 않는 파일 형식"이 된다.
+     그래서 카카오톡 안에서는 📄/⬇️ 대신 🌐 크롬에서 열기 하나만 보여 준다.
+       · 도감 기록은 카카오톡 브라우저 안에만 있으므로, 기록(도감 책 · 섬 도감)을 주소 # 뒤에 담아 넘긴다
+         (게임 진행 상황 META는 게임이 켤 때마다 새로 시작하도록 되어 있어 넘기지 않는다)
+         (# 뒤는 서버로 가지 않는다). 크롬에서 열리면 기록을 합쳐 넣고 주소를 깨끗이 한 뒤 다시 읽는다
+       · 여는 방법: kakaotalk://web/openExternal?url=… (카카오톡이 기본 브라우저로 열어 줌, 안드로이드·아이폰)
+       · 안 열리면 📋 주소 복사 → 크롬 주소창에 붙여 넣기
+     ============================================================ */
+  const IN_APP = IN_KAKAO;
+  const WEB = /^https?:$/.test(location.protocol);
+  const K = { book: typeof BOOK_KEY !== 'undefined' ? BOOK_KEY : 'islandlord_book_v1',
+              codex: typeof CODEX_KEY !== 'undefined' ? CODEX_KEY : 'isl_codex_seen_v068' };
+  const HASH = 'isl-records=', IMPORTED = 'isl_records_imported';
+  const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k) || 'null'); }catch(e){ return null; } };
+  const lsSet = (k, v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+  const b64u = {
+    enc: u8 => { let s = ''; for(let i = 0; i < u8.length; i += 32768) s += String.fromCharCode.apply(null, u8.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+    dec: t => { const s = atob(t.replace(/-/g, '+').replace(/_/g, '/')); const u = new Uint8Array(s.length); for(let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; },
+  };
+  const pipe = async (u8, stream) => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer());
+  async function packRecords(){
+    const raw = new TextEncoder().encode(JSON.stringify({ v: 1, book: lsGet(K.book), codex: lsGet(K.codex) }));
+    if(window.CompressionStream){ try{ return 'z' + b64u.enc(await pipe(raw, new CompressionStream('deflate-raw'))); }catch(e){} }
+    return 'j' + b64u.enc(raw);
+  }
+  async function unpackRecords(t){
+    const u8 = b64u.dec(t.slice(1));
+    const raw = t[0] === 'z' ? await pipe(u8, new DecompressionStream('deflate-raw')) : u8;
+    return JSON.parse(new TextDecoder().decode(raw));
+  }
+  const union = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+  function mergeBook(a, b){                     // a: 이 브라우저에 있던 것, b: 넘어온 것 — 둘 다 살린다
+    if(!b) return a; if(!a) return b;
+    const L = new Map(); [...(a.lessons || []), ...(b.lessons || [])].forEach(l => L.set(JSON.stringify(l), l));
+    return { ...a, ...b, v: 1, lives: Math.max(a.lives || 0, b.lives || 0), best: Math.max(a.best || 0, b.best || 0),
+      concepts: { ...(b.concepts || {}), ...(a.concepts || {}) }, scenes: { ...(b.scenes || {}), ...(a.scenes || {}) },
+      cards: union(a.cards, b.cards), buildings: union(a.buildings, b.buildings), disasters: union(a.disasters, b.disasters),
+      heroes: union(a.heroes, b.heroes), lessons: [...L.values()].sort((x, y) => (x.life || 0) - (y.life || 0)) };
+  }
+  async function importFromHash(){
+    const h = location.hash, i = h.indexOf(HASH); if(i < 0) return;
+    const clean = location.href.slice(0, location.href.indexOf('#'));
+    try{
+      const d = await unpackRecords(decodeURIComponent(h.slice(i + HASH.length).split('&')[0]));
+      lsSet(K.book, mergeBook(lsGet(K.book), d.book));
+      const c0 = lsGet(K.codex) || {}, c1 = d.codex || {};
+      lsSet(K.codex, { ...c0, ...c1, building: union(c0.building, c1.building), disaster: union(c0.disaster, c1.disaster) });
+      try{ sessionStorage.setItem(IMPORTED, '1'); }catch(e){}
+    }catch(e){ console.warn('[도감 기록 가져오기] 실패', e); }
+    location.replace(clean);                     // 기록이 담긴 주소를 지우고 깨끗하게 다시 읽기 (게임이 새 기록으로 시작)
+  }
+  function importedBanner(){                     // 크롬에서 다시 읽힌 뒤 — 도감 책으로 바로 가는 버튼
+    let ok = false; try{ ok = sessionStorage.getItem(IMPORTED) === '1'; sessionStorage.removeItem(IMPORTED); }catch(e){}
+    if(!ok) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'primary';
+    b.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:200;width:auto;max-width:92vw;padding:12px 16px;font-size:16px;box-shadow:4px 4px 0 #22190F';
+    b.textContent = '📕 카카오톡에서 가져온 도감 책 열기';
+    b.onclick = () => { b.remove(); if(typeof openBook === 'function') openBook(); };
+    document.body.appendChild(b);
+  }
+  async function onExternal(){
+    const ext = $('#book-ext');
+    if(!WEB){ hint('이 게임은 파일로 열려 있어서 크롬으로 넘길 수 없어요. 웹 주소로 열어 주세요.'); return; }
+    ext.disabled = true;
+    try{
+      const url = location.href.split('#')[0] + '#' + HASH + encodeURIComponent(await packRecords());
+      state.extUrl = url;
+      location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url);
+      hint('크롬(기본 브라우저)이 열리면 오른쪽 아래 📕 버튼을 누르고, 📄 PDF 만들기 → 📤 보내기를 누르세요.');
+      setTimeout(() => { if(document.visibilityState === 'visible'){ $('#book-copy').hidden = false;
+        hint('크롬이 안 열렸나요? 📋 주소 복사를 누르고 크롬 주소창에 붙여 넣으세요. 도감 기록도 같이 넘어가요.'); } }, 2500);
+    }catch(e){ console.warn('[크롬에서 열기]', e); hint('크롬으로 넘기지 못했어요. 오른쪽 위 ⋮ → "다른 브라우저로 열기"를 눌러 주세요. (도감 기록은 넘어가지 않아요)'); }
+    finally{ ext.disabled = false; }
+  }
+  async function onCopy(){
+    try{ await navigator.clipboard.writeText(state.extUrl); hint('주소를 복사했어요. 크롬을 열고 주소창에 붙여 넣으세요.'); }
+    catch(e){ prompt('이 주소를 길게 눌러 복사한 뒤 크롬 주소창에 붙여 넣으세요.', state.extUrl); }
+  }
+  if(IN_APP){                                    // 카카오톡 안: 🌐 / 📋 버튼을 만들어 넣는다
+    const box = $('.book-actions');
+    if(box){
+      box.insertAdjacentHTML('afterbegin', '<button class="primary" id="book-ext" type="button">🌐 크롬에서 열어 보내기</button><button class="secondary" id="book-copy" type="button" hidden>📋 주소 복사</button>');
+      $('#book-ext').addEventListener('click', onExternal); $('#book-copy').addEventListener('click', onCopy);
+    }
+  }
+  const HINT_APP = '카카오톡 안에서는 PDF를 저장하거나 보낼 수 없어요. 🌐를 누르면 지금까지의 도감 기록을 가지고 크롬에서 열려요. 거기서 📄 PDF 만들기 → 📤 보내기를 누르세요.';
+  const reset0 = reset;
+  reset = function(){ reset0();
+    if(IN_APP){ ['#book-pdf', '#book-share', '#book-dl'].forEach(q => { const b = $(q); if(b) b.hidden = true; }); if(!state.busy) hint(HINT_APP); } };
+
   const bind = (id, fn) => { const b = $(id); if(b) b.addEventListener('click', fn); else console.warn('[도감 PDF] 버튼 없음:', id); };
   bind('#book-pdf', onMake); bind('#book-share', onShare); bind('#book-dl', onDownload);
   /* 책 내용이 바뀌면(이름 입력 · 다시 열기) 만든 PDF는 버리고 처음 상태로 */
@@ -185,8 +277,9 @@
     const orig = window.renderBook;
     window.renderBook = function(){ const r = orig.apply(this, arguments); reset(); return r; };
   } else console.warn('[도감 PDF] renderBook을 못 찾음');
-  const nameIn = $('#book-name'); if(nameIn) nameIn.addEventListener('input', reset);
+  const nameIn = $('#book-name'); if(nameIn) nameIn.addEventListener('input', () => reset());
   reset();
+  importFromHash(); importedBanner();
 
-  window.BookShare = { make, state, reset };
+  window.BookShare = { make, state, reset: () => reset(), packRecords, unpackRecords };
 })();
