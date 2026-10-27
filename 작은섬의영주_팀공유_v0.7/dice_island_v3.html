@@ -1,0 +1,781 @@
+<!doctype html>
+<!--
+============================================================
+ 변경 이력 — 출발 주사위 섬 애니메이션 (dice_island.html)
+============================================================
+ v3 (2026-10-11) — 주사위 값마다 섬 자체가 다르게 · 그 섬이 게임까지 이어진다 (게임 v0.6.9.2)
+  - v2는 영주 집 · 풀 · 나무가 1~6 모두 같아 차이가 작았다 → 섬 크기 · 모양 · 건물 자리는 게임 섬 그대로 두고,
+    영주 집 · 풀밭(색·결) · 나무 모양 · 꽃 · 땅 장식 · 소품을 주사위 값마다 다르게
+      1 빚더미 영지    무너져 가는 집(구멍 난 지붕·판자 댄 창·버팀목·찢어진 회색 깃발) · 마른 풀과 맨땅 · 마른 나무 · 그루터기 · 부서진 울타리
+      2 가난한 어부    초가집(돌벽·그물·말리는 생선) · 바닷바람에 누운 풀 · 바늘잎 나무 · 물웅덩이 · 갈대 · 그물 틀
+      3 평범한 섬      게임 v0.6.7 섬 그대로
+      4 창고지기       농가 + 곡물 사일로 · 이삭 섞인 풀밭 · 과일 나무 · 건초 더미 · 채소밭 · 반듯한 울타리
+      5 상인 집안      2층 상점 집(파란 지붕·줄무늬 차양·금화 간판) · 잔디 줄무늬 · 측백나무 · 돌 포장 마당 · 생울타리 · 가로등 · 우물
+      6 부유한 섬      금 지붕 저택(쌍둥이 탑·기둥) · 꽃 가득한 진초록 풀밭 · 야자수 · 대리석 마당 · 꽃밭 · 분수
+  - 섬 모양 코드는 island_faces_v3.js 한 곳에 — 게임 섬(scene_v3.html)도 같은 파일을 쓰므로, 굴려서 나온 섬이 게임 내내 그대로 보인다
+  - 날씨 · 하늘 · 배 · 날아다니는 것(빚 문서 · 금화 비 · 불꽃놀이 …)은 v2와 같음(이 애니메이션에서만)
+  - 게임 연결은 v2와 같다: dice_island_v3.html?embed=1&face=N · 끝나면 {src:'islandlord-dice', type:'done', face}
+  - island_faces_v3.js를 같은 폴더에 둬야 한다
+ v1.1 (2026-10-11) — 섬을 게임(v0.6.7) 메인 시나리오의 섬과 똑같이
+  - 160×90 따로 그린 섬 → scene_v2.html의 섬 그리기 코드를 그대로 옮겨 320×180, 같은 섬 크기 · 같은 영주 집 · 같은 밭/길/나무/부두
+      · 옮긴 부분은 <SCENE_V2 COPY> 주석 사이. scene_v2.html의 섬을 고치면 여기도 같이 옮겨야 한다
+  - 영주 집 모양은 1~6 모두 같다. 주사위 값마다 다른 건 날씨 · 하늘 · 배 · 주변 소품뿐
+      1 폭풍 · 누런 풀 · 마른 나무 · 잔해 · 큰 배 없음(반쯤 잠긴 쪽배) · 길드 배 · 날아가는 빚 문서 · 까마귀
+      2 비 · 큰 배 대신 고깃배 한 척 · 생선 말리는 대 · 펄쩍 뛰는 물고기
+      3 게임 첫 봄과 같은 섬(큰 배 · 쪽배)
+      4 3 + 처음부터 있는 곡물 창고(게임에서도 창고지기의 섬은 창고를 갖고 시작) · 곡식 자루
+      5 3 + 들어오는 무역선 · 수평선의 무역선 · 부두 옆 짐 상자 · 반짝임
+      6 노을 하늘 · 금빛 바다 · 야자수 · 보물 상자 · 금화 비 · 불꽃놀이 · 몰래 다가오는 검은 돛 배
+  - 물결·바람 빠르기는 게임 섬이 지금 화면에 보이는 빠르기에 맞춤(MOTION 6/5 — 아래 SCENE_V2 COPY 안 설명)
+ v1.0 (2026-10-10) — 게임 v0.6.7과 함께 처음 만듦
+  - 주사위를 굴린 뒤, 어느 섬에서 태어났는지 보여 주기 전에 약 3초 픽셀 애니메이션(160×90)
+      0.0~0.7초  픽셀 주사위가 굴러 떨어져 바다에 풍덩(마지막에 나온 눈이 보임)
+      0.7~1.5초  그 자리에서 섬이 바다 위로 떠오름
+      1.4~3.0초  집·건물이 하나씩 떨어지고, 섬마다 다른 장면이 펼쳐짐 → 3초에 끝(이후엔 잔잔하게 계속 움직임)
+  - 1과 6은 극명하게: 1 빚더미 영지 = 폭풍·번개·무너진 집·날아가는 빚 문서·빚 받으러 오는 길드 배
+                      6 부유한 섬 = 노을·금빛 바다·금 지붕 저택·금화 비·불꽃놀이 (+ 몰래 다가오는 수상한 배 = 사기 손님 함정)
+  - 단독으로 열면: 주사위 값 1~6을 골라 바로 볼 수 있다(주소 ?face=6 도 가능)
+  - 게임(작은섬의영주 v0.6.7)에서는 dice_island.html?embed=1&face=N 으로 넣는다 — 값은 게임이 정하고 사용자는 고를 수 없다
+      끝나면 {src:'islandlord-dice', type:'done', face}를 보내고, 게임이 {src:'islandlord', type:'skip'}을 보내면 바로 끝 장면으로 간다
+============================================================
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>출발 주사위 섬 v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+  :root{ --night:#0B1526; --deep:#12233B; --line:#2B3F5E; --mute:#8FA6BE; --snow:#E8EEF0; --paper:#F3E6C8; --ink:#22190F; --ink-2:#6A5636; --gold:#F2C14E;
+    --px:'Press Start 2P',ui-monospace,monospace; --head:'Black Han Sans','Noto Sans KR',sans-serif; --body:'Noto Sans KR',-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--night);color:var(--snow);font-family:var(--body);font-size:14px;line-height:1.5}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block}
+  body.embed{overflow:hidden;background:#000}
+  body.embed #cv{position:fixed;inset:0;width:100%;height:100%;object-fit:cover}
+  body.embed .preview{display:none}
+  .wrap{max-width:900px;margin:0 auto;padding:14px 16px 24px;display:flex;flex-direction:column;gap:10px}
+  h1{font-family:var(--head);font-weight:400;font-size:24px;margin:0}
+  .sub{margin:0;color:var(--mute);font-size:13px}
+  .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .row>span{font-size:11px;color:var(--mute);width:64px}
+  .seg{display:flex;flex-wrap:wrap;border:2px solid var(--line)}
+  .seg button{font:inherit;font-size:13px;padding:6px 12px;background:var(--deep);color:var(--mute);border:0;cursor:pointer}
+  .seg button+button{border-left:2px solid var(--line)}
+  .seg button.on{background:var(--gold);color:var(--ink);font-weight:700}
+  .seg button:focus-visible{outline:3px solid var(--gold);outline-offset:-3px}
+  .stage{position:relative;border:3px solid var(--ink);box-shadow:4px 4px 0 rgba(0,0,0,.55);background:#000;line-height:0;align-self:center;max-width:100%}
+  .stage #cv{width:100%;height:auto;aspect-ratio:16/9}
+  .cap{background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:10px 14px;min-height:64px}
+  .cap b{font-family:var(--head);font-weight:400;font-size:20px;display:block}
+  .cap small{color:var(--ink-2);font-size:13.5px}
+  .notes{background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:10px 14px;font-size:13.5px}
+  .notes ul{margin:0;padding-left:1.2em}
+</style>
+</head>
+<body>
+<div class="preview wrap">
+  <h1>출발 주사위 섬 v3 — 미리보기</h1>
+  <p class="sub">주사위 값을 고르면 그 섬의 3초 애니메이션이 바로 재생돼요. 게임 안에서는 주사위가 정한 값만 나와요.</p>
+  <div class="row"><span>주사위 값</span><div class="seg" id="c-face"></div><div class="seg" id="c-act"></div></div>
+</div>
+<div class="preview wrap" style="padding-top:0;padding-bottom:0"><div class="stage" id="stage"></div></div>
+<canvas id="cv" width="320" height="180" aria-label="태어난 섬 애니메이션"></canvas>
+<div class="preview wrap">
+  <div class="cap" id="cap"></div>
+  <div class="notes"><ul>
+    <li><b>1 빚더미 영지</b>와 <b>6 부유한 섬</b>은 극명하게 달라요 — 폭풍·누런 풀·마른 나무·날아가는 빚 문서·길드 배 ↔ 노을·금빛 바다·야자수·보물 상자·금화 비·불꽃놀이.</li>
+    <li>6에는 몰래 다가오는 검은 돛 배가 있어요. 부유한 섬엔 "유혹·사기 손님이 세 배로 온다"는 함정이 있다는 힌트예요.</li>
+    <li>섬 크기 · 모양 · 건물 자리는 게임 섬과 같고, <b>영주 집 · 풀밭 · 나무 · 꽃 · 땅 장식</b>이 주사위 값마다 달라요. 여기서 나온 섬이 게임 내내 그대로 이어져요.</li>
+    <li>1 무너져 가는 집 · 마른 나무 / 2 초가집 · 바늘잎 나무 · 갈대 / 3 게임 첫 봄 그대로 / 4 농가와 사일로 · 과일 나무 · 건초 더미 / 5 2층 상점 집 · 잔디 줄무늬 · 측백나무 / 6 금 지붕 저택 · 야자수 · 분수 · 꽃밭</li>
+  </ul></div>
+</div>
+
+<script src="island_faces_v3.js"></script>   <!-- v3 주사위 값별 섬 모양 (dice_island_v3 · scene_v3 공용) -->
+<script>
+'use strict';
+/* <SCENE_V2 COPY> ===========================================================
+   scene_v2.html(게임 섬)의 그리기 코드를 그대로 옮긴 부분 — 섬 크기 · 영주 집 모양을 게임과 똑같게.
+   scene_v2.html의 섬을 고치면 이 부분도 같이 바꿔야 한다
+   =========================================================================== */
+const W=320, H=180, HZ=78;                       // HZ = 수평선
+const EMBED=/[?&]embed\b/.test(location.search);
+const STILL=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const INK='#2A1E16';
+
+/* ── 색 · 노이즈 도구 ── */
+const HEXC=new Map();
+const hex2=h=>{ let v=HEXC.get(h); if(!v){ v=[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]; HEXC.set(h,v); } return v; };
+const rgb2=(r,g,b)=>'#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const mix=(a,b,t)=>{ const A=hex2(a),B=hex2(b); return rgb2(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t); };
+const shade=(a,f)=>{ const A=hex2(a); return rgb2(A[0]*f,A[1]*f,A[2]*f); };
+const BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5].map(v=>(v+0.5)/16);
+const bay=(x,y)=>BAYER[((y&3)<<2)+(x&3)];
+function hash(x,y){ let h=(Math.imul(x|0,374761393)+Math.imul(y|0,668265263))|0; h=Math.imul(h^(h>>>13),1274126177); return ((h^(h>>>16))>>>0)/4294967296; }
+function vnoise(x,y,s){ const fx=x/s, fy=y/s, x0=Math.floor(fx), y0=Math.floor(fy), u0=fx-x0, v0=fy-y0, sm=t=>t*t*(3-2*t), u=sm(u0), v=sm(v0);
+  const a=hash(x0,y0), b=hash(x0+1,y0), c=hash(x0,y0+1), d=hash(x0+1,y0+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+const mk=(w,h)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
+let RND=Math.random;
+
+/* ── 계절 색 — functions/scene.js SCENE_PALETTE를 이어받고, 픽셀 장면에 필요한 단계를 더했다 ── */
+const BASE={
+  spring:{ sky:['#76BCD9','#8ECBE2','#A9D8E8','#C6E7EE','#DDF1F2'], sun:'#FFF2B0', glow:'#F6F1CF', sunY:24, cloud:'#FFFFFF', cloudSh:'#D3E8EF', far:'#7FB0C2',
+    sea:['#8CCFD3','#5DB6C8','#4AA2BC','#3B8EAA','#317C98'], crest:'#D2F2EA', crestSh:'#2A7290', foam:'#F6FCF9', shallow:'#76CBC8', shallow2:'#9EDDD3',
+    wet:'#C9AE79', sand:'#E9D39B', sandL:'#F2E2B6', cliff:'#86684B', cliffD:'#684D39', cliffL:'#A08262',
+    grass:'#78B95A', grassD:'#559648', grassL:'#98C96D', tree:'#4D974E', treeD:'#34753D', treeL:'#73B85B',
+    roof:'#A95E45', roofD:'#814434', wall:'#E8D4A8', wallSh:'#CDB487', wood:'#A8734D', woodD:'#765037', path:'#CFAE73', pathL:'#E4CA91',
+    flower:['#F49AB7','#FFFFFF','#F2D05D'], crop:'#5FAE4E', cropTop:'#8FD06A', drift:['#F7B6CB','#FFE1EA','#F49AB7'] },
+  summer:{ sky:['#4FAFDF','#65BCE3','#86CBE8','#B2E0EE','#D7F0F2'], sun:'#FFF6C0', glow:'#F8F4D6', sunY:20, cloud:'#FFFFFF', cloudSh:'#CFE7F1', far:'#6FA9C0',
+    sea:['#7CC7D0','#46ABC8','#339DC2','#2784A7','#1F7194'], crest:'#C9F0E8', crestSh:'#1C6A8A', foam:'#F8FDFB', shallow:'#5CC4C8', shallow2:'#8ADBD5',
+    wet:'#C6AA72', sand:'#E7D093', sandL:'#F1DFAD', cliff:'#806046', cliffD:'#604735', cliffL:'#9A7A5A',
+    grass:'#61AF50', grassD:'#438D43', grassL:'#84C761', tree:'#398B46', treeD:'#276D38', treeL:'#5EAB4F',
+    roof:'#B85E43', roofD:'#873F31', wall:'#E8D4A8', wallSh:'#CDB487', wood:'#A97049', woodD:'#704A34', path:'#CBA66C', pathL:'#E1C78C',
+    flower:['#F2D05D','#FFFFFF','#F28A5B'], crop:'#4FA046', cropTop:'#7CC860', drift:['#FFFFFF','#EEF6E8'] },
+  autumn:{ sky:['#D9834A','#E59A5C','#EDB37A','#F1C690','#F4D5A9'], sun:'#FFE0A0', glow:'#F8D9A8', sunY:44, cloud:'#FFF1E0', cloudSh:'#E8C0A0', far:'#8A8A9A',
+    sea:['#A8C7C3','#6FA6B3','#4F93A7','#3E7C92','#33697C'], crest:'#E2EFE8', crestSh:'#2E6276', foam:'#FBF6EE', shallow:'#80B5B2', shallow2:'#A9CEC6',
+    wet:'#B89A62', sand:'#D8B778', sandL:'#E8CC97', cliff:'#76543D', cliffD:'#5A4030', cliffL:'#8E6C52',
+    grass:'#A97B3F', grassD:'#80602F', grassL:'#C39A55', tree:'#C36F32', treeD:'#914A2B', treeL:'#D58A3E',
+    roof:'#9A4E3B', roofD:'#71372D', wall:'#E8D4A8', wallSh:'#CDB487', wood:'#986844', woodD:'#67452F', path:'#BD965F', pathL:'#D9BA7D',
+    flower:['#EFA04E','#D8573A','#F2D05D'], crop:'#D9A940', cropTop:'#F0CB62', drift:['#E07B39','#C9512F','#F0B04A'] },
+  winter:{ sky:['#7F95A6','#8FA4B4','#A6B8C4','#C0CDD4','#D9E2E4'], sun:'#F4F1E0', glow:'#E6E8E2', sunY:28, cloud:'#F4F6F6', cloudSh:'#C9D2D6', far:'#8A9CAA',
+    sea:['#B4CCD0','#7F9EAE','#587C91','#486C82','#3D5C70'], crest:'#E8F2F1', crestSh:'#37556A', foam:'#FFFFFF', shallow:'#98B7BD', shallow2:'#BCD2D3',
+    wet:'#BDB4A0', sand:'#DED6C4', sandL:'#F0E9D9', cliff:'#737878', cliffD:'#555B5C', cliffL:'#8C9090',
+    grass:'#C8D1C9', grassD:'#9BA9A1', grassL:'#E8EDE8', tree:'#839C91', treeD:'#627E73', treeL:'#A7BBB1',
+    roof:'#7D6D69', roofD:'#5B4F4D', wall:'#E8D4A8', wallSh:'#CDB487', wood:'#887464', woodD:'#625244', path:'#B5A68B', pathL:'#D0C4AA',
+    flower:['#C8DDE3','#FFFFFF','#E8EEF0'], crop:'#AAB6AE', cropTop:'#E8EEF0', drift:null, snowy:true },
+};
+const WIND={ clear:1, fog:0.4, snow:1.3, rain:1.7, storm:3.2 };
+const LAND=['grass','grassD','grassL','sand','sandL','wet','cliff','cliffD','cliffL','path','pathL','tree','treeD','treeL','roof','roofD','wall','wallSh','wood','woodD'];
+function palette(season,wx,famine){
+  const B=BASE[season]||BASE.summer, P={...B, season};
+  if(wx==='rain'||wx==='storm'||wx==='fog'){
+    const g=wx==='storm'?'#2E3644':wx==='rain'?'#6E7A86':'#C9D2D6', k=wx==='storm'?0.72:wx==='rain'?0.5:0.45;
+    P.sky=B.sky.map(c=>mix(c,g,k)); P.cloud=mix(B.cloud,g,k*0.75); P.cloudSh=mix(B.cloudSh,g,k); P.far=mix(B.far,g,k*0.7);
+    const sg=wx==='fog'?'#C9D2D6':'#26323E', sk=wx==='storm'?0.45:wx==='rain'?0.25:0.22;
+    P.sea=B.sea.map(c=>mix(c,sg,sk)); P.crestSh=mix(B.crestSh,sg,sk); P.shallow=mix(B.shallow,sg,sk); P.shallow2=mix(B.shallow2,sg,sk);
+    if(wx!=='fog') LAND.forEach(n=>P[n]=mix(B[n],'#2E3644',wx==='storm'?0.26:0.13));
+  }
+  isleTint(P);   // v3 주사위 값별 색 (island_faces_v3.js)
+  if(famine){ ['grass','grassD','grassL'].forEach(n=>P[n]=mix(P[n],'#B9A052',0.55)); P.crop='#9C8A4A'; P.cropTop='#B9A052'; }
+  return P;
+}
+
+/* ── 상태 ── */
+const ST={ season:'spring', weather:'clear', built:new Set(), famine:false, voyage:false };
+let P=palette('spring','clear',false), WINDK=1;
+
+/* ============================================================
+   ① 배경 캐시 — 하늘(띠 + 디더링) · 해 · 먼 섬 · 바다(원근 띠)
+   ============================================================ */
+function makeBG(){
+  const c=mk(W,H), x=c.getContext('2d'), img=x.createImageData(W,H), d=img.data;
+  const sky=P.sky.map(hex2), sea=P.sea.map(hex2);
+  for(let y=0;y<H;y++){
+    let arr, t;
+    if(y<HZ){ arr=sky; t=y/(HZ-1)*(arr.length-1); }
+    else { arr=sea; t=Math.pow((y-HZ)/(H-1-HZ),0.8)*(arr.length-1); }
+    const i0=Math.min(arr.length-2,Math.floor(t)), f=Math.max(0,Math.min(1,(t-i0-0.5)*3+0.5));   // 띠 경계에서만 디더링
+    for(let xx=0;xx<W;xx++){ const col=f>bay(xx,y)?arr[i0+1]:arr[i0], i=(y*W+xx)*4; d[i]=col[0]; d[i+1]=col[1]; d[i+2]=col[2]; d[i+3]=255; }
+  }
+  x.putImageData(img,0,0);
+  const px=(a,b,col)=>{ x.fillStyle=col; x.fillRect(a,b,1,1); };
+  // 해 (맑을 때만) — 둥근 해 + 디더링 후광 두 겹
+  if(ST.weather==='clear'||ST.weather==='snow'){
+    const sx=262, sy=P.sunY, r=P.season==='autumn'?10:8, g1=mix(P.glow,P.sky[1],0.25), g2=mix(P.glow,P.sky[2],0.55);
+    for(let j=-r-9;j<=r+9;j++) for(let i=-r-9;i<=r+9;i++){ const dd=Math.hypot(i,j), X=sx+i, Y=sy+j; if(Y<0||Y>=HZ) continue;
+      if(dd<=r) px(X,Y,(i+j<-r*0.6)?'#FFFFFF':P.sun); else if(dd<=r+4){ if(bay(X,Y)<0.55) px(X,Y,g1); } else if(dd<=r+9){ if(bay(X,Y)<0.18) px(X,Y,g2); } }
+  }
+  // 먼 섬 — 수평선 위 실루엣 (윗선만 밝게)
+  const hill=(cx,w,h,seed)=>{ for(let xx=cx-w;xx<=cx+w;xx++){ const k=(xx-cx)/w; let hh=h*Math.sqrt(Math.max(0,1-k*k)); hh+=(vnoise(xx,seed,3)-0.5)*2.2; hh=Math.round(hh); if(hh<=0) continue;
+      for(let y=HZ-hh;y<HZ;y++) px(xx,y,P.far); px(xx,HZ-hh,mix(P.far,'#FFFFFF',0.18)); } };
+  hill(22,30,8,3); hill(58,16,4,7); hill(214,22,5,11); hill(236,10,3,13);
+  // 수평선 — 옅은 안개 한 줄
+  x.fillStyle=mix(P.sea[0],P.sky[P.sky.length-1],0.55); x.fillRect(0,HZ,W,1);
+  return c;
+}
+
+/* ============================================================
+   ② 섬 — 풀밭 윗면 · 앞쪽 절벽(두께) · 모래 해변 · 얕은 물
+   섬 윗면: 가운데 (160,134), 가로 반지름 112, 세로 34. 절벽 7px. 해변·얕은 물은 절벽 아래(+7) 기준
+   ============================================================ */
+const IS={cx:160, cy:134, rx:112, ry:34, ch:7};
+const wob=th=>1+0.045*Math.sin(3*th+0.7)+0.03*Math.sin(5*th+2.1)+0.02*Math.sin(8*th+0.3);
+function lvl(x,y,oy){ const dx=(x+0.5-IS.cx)/IS.rx, dy=(y+0.5-IS.cy-oy)/IS.ry; return Math.hypot(dx,dy)/wob(Math.atan2(dy,dx)); }
+
+/* 건물 자리 — 아래 가운데 기준. 숫자는 픽셀 좌표 */
+const PLOTS={
+  manor:      {x:160, y:115, always:true},
+  warehouse:  {x:84,  y:142},
+  herb:       {x:122, y:160},
+  reservoir:  {x:165, y:161},
+  field2:     {x:206, y:159},
+  market:     {x:231, y:140},
+  breakwater: {x:272, y:177, sea:true},
+};
+const FIELD={x:94, y:111, w:28, h:10};          // 원래 있던 밭 (영주 집 왼쪽 뒤)
+const TREES=[[128,111,4],[194,111,5],[206,115,4],[60,139,5],[67,152,4],[97,156,4],[258,129,5],[257,152,4],[142,166,3],[234,158,4],[46,128,3]];
+const PATHS=[ [[166,121],[200,124],[232,143]], [[232,143],[252,143],[272,143]], [[152,121],[120,126],[92,143]], [[156,122],[138,140],[124,161]], [[168,122],[192,140],[205,160]] ];
+
+function makeShallow(){
+  const c=mk(W,H), x=c.getContext('2d'), img=x.createImageData(W,H), d=img.data, s1=hex2(P.shallow), s2=hex2(P.shallow2);
+  for(let y=HZ+4;y<H;y++) for(let xx=0;xx<W;xx++){ const v=lvl(xx,y,IS.ch); let col=null;
+    if(v<=1.16) col=s2; else if(v<=1.21) col=(v-1.16)/0.05>bay(xx,y)?s1:s2; else if(v<=1.28){ if(bay(xx,y)>(v-1.21)/0.07) col=s1; }
+    if(col){ const i=(y*W+xx)*4; d[i]=col[0]; d[i+1]=col[1]; d[i+2]=col[2]; d[i+3]=255; } }
+  x.putImageData(img,0,0); return c;
+}
+function makeIsland(){
+  const c=mk(W,H), x=c.getContext('2d'), img=x.createImageData(W,H), d=img.data;
+  const put=(xx,y,h)=>{ const col=hex2(h), i=(y*W+xx)*4; d[i]=col[0]; d[i+1]=col[1]; d[i+2]=col[2]; d[i+3]=255; };
+  for(let y=HZ+10;y<H;y++) for(let xx=20;xx<300;xx++){
+    const vt=lvl(xx,y,0);
+    if(vt<=1){                                   // 풀밭 — 부드러운 노이즈로 밝은/어두운 덩어리
+      const n=vnoise(xx,y,9)*0.7+vnoise(xx+50,y+30,4)*0.3, b=bay(xx,y);
+      let col = n>0.66?P.grassL : n>0.6?(b<0.5?P.grassL:P.grass) : n<0.3?P.grassD : n<0.36?(b<0.5?P.grassD:P.grass) : P.grass;
+      col=isleGrass(xx,y,col,n,b);               // v3 주사위 값별 풀 결
+      if(vt>0.955 && y>IS.cy) col=P.grassL;      // 앞쪽 가장자리 — 햇빛 받는 턱
+      else if(vt>0.93 && y<=IS.cy) col=P.grassD; // 뒤쪽 가장자리 — 그늘
+      if(P.snowy && hash(xx,y)<0.025) col='#FFFFFF';
+      put(xx,y,col); continue;
+    }
+    let k=1; for(;k<=IS.ch;k++) if(lvl(xx,y-k,0)<=1) break;
+    if(k<=IS.ch){                                // 절벽 — 위는 그늘, 결(층) 무늬, 아래는 젖은 바위
+      let col = k===1?P.cliffD : k===IS.ch?P.cliffD : ((y+Math.floor(xx/6))%3===0?P.cliffD:P.cliff);
+      if(k>1 && k<IS.ch && hash(xx,y+7)<0.14) col=P.cliffL;
+      put(xx,y,col); continue;
+    }
+    const vb=lvl(xx,y,IS.ch);
+    if(vb<=1.12){ let col=vb>1.085?P.wet:P.sand; if(col===P.sand && hash(xx,y)<0.08) col=P.sandL; put(xx,y,col); }
+  }
+  x.putImageData(img,0,0);
+  const R=(a,b,w,h,col)=>{ x.fillStyle=col; x.fillRect(a,b,w,h); };
+  // 나무·건물 그림자 자리(나무는 고정) — 해가 오른쪽 위라 왼쪽 아래로
+  x.fillStyle='rgba(20,40,20,0.20)'; TREES.forEach(([tx,ty,r])=>{ for(let j=-1;j<=1;j++) x.fillRect(tx-r-2,ty+j,r*2+1-Math.abs(j)*2,1); });
+  // 길 — 영주 집 앞 마당에서 건물 자리로
+  const stroke=(pts)=>{ const [a,b,cc]=pts; for(let t=0;t<=1;t+=1/90){ const u=1-t, px=u*u*a[0]+2*u*t*b[0]+t*t*cc[0], py=u*u*a[1]+2*u*t*b[1]+t*t*cc[1];
+      R(Math.round(px)-1,Math.round(py)-1,3,2,P.path); } for(let t=0;t<=1;t+=1/30){ const u=1-t, px=u*u*a[0]+2*u*t*b[0]+t*t*cc[0], py=u*u*a[1]+2*u*t*b[1]+t*t*cc[1]; R(Math.round(px),Math.round(py)-1,1,1,P.pathL); } };
+  PATHS.forEach(stroke);
+  for(let j=-4;j<=4;j++){ const w=Math.round(14*Math.sqrt(1-(j/5)**2)); R(160-w,121+j,w*2,1,P.path); }   // 마당
+  for(let i=0;i<10;i++) R(150+((i*7)%20),119+(i%3)*2,1,1,P.pathL);
+  // 원래 밭 — 이랑 + 작물(계절)
+  const soil=mix(P.path,'#6B4425',0.45), soilD=shade(soil,0.78), F=FIELD;
+  R(F.x-1,F.y-1,F.w+2,F.h+2,shade(soil,0.7));
+  for(let j=0;j<F.h;j++){ R(F.x,F.y+j,F.w,1,j%2?soil:soilD);
+    if(j%2) for(let i=1;i<F.w;i+=3){ const X=F.x+i, Y=F.y+j;
+      if(P.season==='winter'){ if(hash(X,Y)<0.6) R(X,Y,2,1,'#F4F8FA'); }
+      else if(P.season==='spring') R(X,Y-1,1,1,P.crop);
+      else { R(X,Y-1,1,2,P.crop); R(X,Y-2,1,1,P.cropTop); } } }
+  // 꽃 — 건물 자리·길·밭을 피해서 몇 송이만
+  const blocked=(X,Y)=>{ if(X>=F.x-3&&X<=F.x+F.w+3&&Y>=F.y-3&&Y<=F.y+F.h+3) return true;
+    for(const k in PLOTS){ const p=PLOTS[k], w=k==='manor'?24:20; if(Math.abs(X-p.x)<w && Y<p.y+3 && Y>p.y-22) return true; } return false; };
+  const FL=isleFlowers(); for(let i=0;i<FL.n;i++){ const X=40+Math.floor(hash(i,91)*240), Y=104+Math.floor(hash(i,37)*62);
+    if(lvl(X,Y,0)>0.9||blocked(X,Y)) continue; const col=FL.c[i%FL.c.length]; R(X,Y,1,1,col); if(i%3===0) R(X+1,Y+1,1,1,col); R(X,Y+1,1,1,P.grassD); }
+  // 해변 바위 몇 개 (물가 쪽)
+  [[44,146,5],[52,151,3],[106,176,4],[258,166,3]].forEach(([rx,ry,r])=>{ R(rx-r,ry-1,r*2,2,'#8D8A78'); R(rx-r+1,ry-2,r*2-2,1,'#B3B0A2'); R(rx-r+1,ry+1,r*2-2,1,'#6C6A5E'); });
+  isleDecor(x,R);   // v3 주사위 값별 땅 장식
+  return c;
+}
+
+/* ============================================================
+   ③ 스프라이트 — 문자 그림 대신 칸(grid)에 직접 칠하고, 마지막에 검은 외곽선을 자동으로 두른다
+   ============================================================ */
+function Grid(w,h){ const g=Array.from({length:h},()=>new Array(w).fill(null)), o={w,h,g};
+  o.p=(x,y,c)=>{ x=Math.round(x); y=Math.round(y); if(c&&x>=0&&x<w&&y>=0&&y<h) g[y][x]=c; };
+  o.r=(x,y,ww,hh,c)=>{ for(let j=y;j<y+hh;j++) for(let i=x;i<x+ww;i++) o.p(i,j,c); };
+  o.h=(x0,x1,y,c)=>o.r(x0,y,x1-x0+1,1,c);
+  o.v=(x,y0,y1,c)=>o.r(x,y0,1,y1-y0+1,c);
+  o.get=(x,y)=>(x>=0&&x<w&&y>=0&&y<h)?g[y][x]:null;
+  o.outline=(ink=INK)=>{ const add=[]; for(let y=0;y<h;y++) for(let x=0;x<w;x++){ if(g[y][x]) continue;
+      if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{ const c=o.get(x+a,y+b); return c&&c!==ink; })) add.push([x,y]); } add.forEach(([x,y])=>g[y][x]=ink); };
+  o.canvas=()=>{ const c=mk(w,h), x=c.getContext('2d'); for(let y=0;y<h;y++) for(let i=0;i<w;i++){ const col=g[y][i]; if(col){ x.fillStyle=col; x.fillRect(i,y,1,1); } } return c; };
+  return o; }
+const SNOW='#F4F8FA';
+
+const BUILD={
+  /* 영주 집 — v3: 주사위 값마다 다른 집 (island_faces_v3.js의 ISLE_MANOR, 3이 원래 집) */
+  manor(){ return ISLE_MANOR[ISLE](); },
+
+  /* 곡물 창고 — 빨간 헛간 · X자 큰 문 · 다락 곡식 · 곡식 자루 */
+  warehouse(){ const g=Grid(40,34), R='#B4483A', RD='#8A3329', roof='#5E4A3E', roofL='#7D6656', trim='#EFE0BE';
+    for(let y=4;y<=14;y++){ const k=14-y, x0=3+Math.round(k*1.45), x1=34-Math.round(k*1.45); g.h(x0,x1,y,roof); g.p(x0,y,roofL); g.p(x0+1,y,roofL); if(k%3===1) g.h(x0+2,x1-2,y,shade(roof,0.8)); }
+    for(let y=8;y<=14;y++){ const k=14-y, x0=7+Math.round(k*1.45), x1=30-Math.round(k*1.45); if(x1>=x0) g.h(x0,x1,y,R); }
+    g.r(16,10,6,5,RD); g.r(17,11,4,4,'#3A2A20'); g.p(18,13,'#F2C14E'); g.p(19,12,'#F2C14E'); g.h(17,20,14,'#E8C35A');
+    g.r(5,15,29,17,R); for(let x=7;x<33;x+=3) g.v(x,16,31,RD); g.r(30,16,3,16,RD);
+    g.h(5,33,15,trim); g.v(5,15,31,trim); g.v(33,15,31,trim);
+    g.r(12,19,14,13,trim); g.r(13,20,12,12,RD); for(let i=0;i<12;i++){ g.p(13+i,20+i,trim); g.p(24-i,20+i,trim); } g.v(18,20,31,'#6E2A22');
+    g.h(4,34,32,'#8D8A78');
+    g.r(34,28,5,4,'#E8D29A'); g.h(35,37,27,'#E8D29A'); g.p(36,26,'#B89A5A'); g.r(35,30,3,1,'#CDB57A');
+    if(P.snowy){ for(let y=4;y<=6;y++){ const k=14-y; g.h(3+Math.round(k*1.45),34-Math.round(k*1.45),y,SNOW); } }
+    g.outline(); return {c:g.canvas(), ax:19, ay:33}; },
+
+  /* 항구 시장 — 빨강·크림 줄무늬 차양 · 과일 · 생선 · 곡식 · 간판 */
+  market(){ const g=Grid(44,32), A='#D2453A', B='#F6EBD0';
+    g.r(14,1,16,6,P.wood); g.h(14,29,1,P.woodD); g.h(14,29,6,P.woodD);
+    g.r(17,3,3,2,'#F2C14E'); g.p(18,2,'#FFE080'); g.h(23,26,3,'#8FB6CF'); g.h(23,26,4,'#6E97B2'); g.p(27,3,'#6E97B2'); g.p(27,4,'#6E97B2');
+    g.v(21,7,8,P.woodD); g.v(22,7,8,P.woodD);
+    g.v(4,9,30,P.woodD); g.v(39,9,30,P.woodD);
+    for(let y=9;y<=15;y++){ const ins=Math.round((15-y)*0.6); for(let x=2+ins;x<=41-ins;x++) g.p(x,y,Math.floor((x-2)/4)%2?B:A); }
+    for(let x=2;x<=41;x++){ const m=(x-2)%4; if(m===1||m===2) g.p(x,16,Math.floor((x-2)/4)%2?B:A); }
+    g.r(5,17,34,5,'#4A3A2E');
+    [7,10].forEach(x=>{ g.r(x,19,2,2,'#D2453A'); g.p(x,19,'#F07060'); });
+    g.h(14,18,20,'#8FB6CF'); g.h(15,18,21,'#6E97B2'); g.p(13,20,'#6E97B2');
+    g.r(22,19,4,3,'#E8D29A'); g.p(23,18,'#C9A860');
+    g.r(29,20,3,2,'#E0832E'); g.r(33,20,3,2,'#E0832E'); g.p(30,19,'#4FA046'); g.p(34,19,'#4FA046');
+    g.r(3,22,38,4,P.wood); g.h(3,40,22,mix(P.wood,'#FFFFFF',0.3)); g.h(3,40,25,P.woodD);
+    g.r(5,26,34,5,shade(P.woodD,0.85)); g.r(7,27,6,4,'#C9A06A'); g.h(7,12,27,'#E2C08A'); g.r(30,27,6,4,'#C9A06A'); g.h(30,35,27,'#E2C08A');
+    if(P.snowy){ for(let x=6;x<=37;x++) if(hash(x,9)<0.8) g.p(x,9,SNOW); }
+    g.outline(); return {c:g.canvas(), ax:22, ay:31}; },
+
+  /* 약초방 — 초록 지붕 · 초록 십자 간판 · 걸어 둔 약초 · 화분 */
+  herb(){ const g=Grid(34,32), GR='#5E9E4A', GRD='#3F7533', GRL='#86C266', WL='#EADBB5', WS='#D3BF93';
+    for(let y=6;y<=16;y++){ const k=16-y, x0=3+Math.round(k*1.2), x1=30-Math.round(k*1.2); g.h(x0,x1,y,GR); g.p(x0,y,GRL); g.p(x0+1,y,GRL); if(k%3===2) g.h(x0+2,x1-1,y,GRD); }
+    g.h(5,28,17,GRD);
+    g.r(6,18,22,12,WL); g.r(23,18,5,12,WS);
+    g.r(14,22,6,8,'#6A4A2E'); g.p(18,26,'#F2C14E');
+    g.r(8,21,4,4,P.woodD); g.r(9,22,2,2,'#BFE3B0');
+    [7,10,13,20,23,26].forEach((x,i)=>{ g.p(x,18,i%2?'#9A6AC0':'#4FA046'); g.p(x,19,i%2?'#7A4AA0':'#3E8A3A'); });
+    g.r(22,20,5,5,'#FFFFFF'); g.h(23,25,22,'#3E9E5E'); g.v(24,21,23,'#3E9E5E');
+    g.r(1,26,4,4,'#B8673E'); g.p(2,24,'#4FA046'); g.p(1,25,'#4FA046'); g.p(3,25,'#5FBE56'); g.p(4,24,'#4FA046');
+    g.r(29,26,4,4,'#B8673E'); g.p(30,24,'#4FA046'); g.p(31,23,'#5FBE56'); g.p(32,25,'#4FA046'); g.p(29,25,'#E86A8A');
+    g.h(5,28,30,'#8D8A78');
+    if(P.snowy){ for(let y=6;y<=8;y++){ const k=16-y; g.h(3+Math.round(k*1.2),30-Math.round(k*1.2),y,SNOW); } }
+    g.outline(); return {c:g.canvas(), ax:17, ay:31}; },
+
+  /* 저수지 — 돌 테두리 · 물(반짝임은 따로) · 연잎 */
+  reservoir(){ const g=Grid(40,20);
+    for(let y=0;y<20;y++) for(let x=0;x<40;x++){
+      const e=((x+0.5-20)/18)**2+((y+0.5-10)/8)**2, e2=((x+0.5-20)/15)**2+((y+0.5-9.5)/5.6)**2;
+      if(e2<=1){ const ice=P.snowy; g.p(x,y, ice ? (hash(x,y)<0.12?'#FFFFFF':y<8?'#E2F0F4':'#C8E0EA') : y<7?'#7CC4DE':y>11?'#3A8AB0':'#4AA3C9'); }
+      else if(e<=1) g.p(x,y, y>10 ? ((x+y)%4===0?'#5E5C56':'#7E7C74') : ((x+y)%4===0?'#8A887E':'#A8A69C'));
+    }
+    if(!P.snowy){ g.r(10,9,2,1,'#4FA046'); g.p(11,8,'#5FBE56'); g.r(27,11,3,1,'#4FA046'); g.p(28,10,'#F49AB7'); g.p(15,12,'#4FA046'); }
+    g.outline(); return {c:g.canvas(), ax:20, ay:19, water:{cx:20,cy:9,rx:13,ry:4}}; },
+
+  /* 건너편 밭 — 울타리 · 이랑 · 계절 작물 · 허수아비 */
+  field2(){ const g=Grid(40,26), soil=mix(P.path,'#6B4425',0.45), soilD=shade(soil,0.78);
+    g.r(2,11,36,12,soil); for(let y=11;y<23;y+=2) g.h(2,37,y,soilD);
+    for(let y=12;y<23;y+=2) for(let x=3;x<37;x+=3){
+      if(P.season==='winter'){ if(hash(x,y)<0.55) g.r(x,y,2,1,SNOW); }
+      else if(P.season==='spring'){ g.p(x,y-1,P.crop); }
+      else { g.p(x,y,P.crop); g.p(x,y-1,P.crop); g.p(x,y-2,P.cropTop); } }
+    g.h(1,38,10,P.wood); g.h(1,38,23,P.wood); [1,9,17,25,33,38].forEach(x=>{ g.v(x,9,11,P.woodD); g.v(x,22,24,P.woodD); });
+    g.v(32,2,16,P.woodD); g.h(28,36,7,P.wood); g.r(31,3,3,3,'#E8D4A8'); g.p(31,4,INK); g.p(33,4,INK);
+    g.h(30,34,2,'#5A3A28'); g.r(31,1,3,1,'#5A3A28'); g.r(30,8,5,4,'#C8433A'); g.p(31,9,'#3E8FD6'); g.p(28,8,'#E8C35A'); g.p(36,8,'#E8C35A');
+    g.outline(); return {c:g.canvas(), ax:20, ay:25}; },
+
+  /* 방파제 — 앞바다의 돌둑 + 빨간·흰 등대 (불빛은 따로 깜빡) */
+  breakwater(){ const g=Grid(62,32), S1='#C4C6C2', S2='#9A9C98', S3='#6E706C';
+    for(let i=0;i<9;i++){ const bx=2+Math.round(i*5.4), by=21+Math.round(-Math.sin(i/8*Math.PI)*3);
+      g.r(bx,by,6,6,S2); g.h(bx,bx+5,by,S1); g.v(bx,by,by+5,S1); g.h(bx,bx+5,by+5,S3); if(hash(i,3)<0.5) g.p(bx+3,by+2,S3); }
+    g.r(2,27,48,4,'#5E605C');
+    const tx=50;
+    for(let y=8;y<=26;y++){ const ww=y<12?6:y<20?7:8, x0=tx+Math.round((8-ww)/2); g.h(x0,x0+ww-1,y,Math.floor((y-8)/4)%2?'#F4F1E8':'#C8433A'); g.p(x0+ww-1,y,Math.floor((y-8)/4)%2?'#D6D2C6':'#9A2E26'); }
+    g.r(tx+1,3,6,5,'#2E2A28'); g.r(tx+2,4,4,3,'#F2C14E'); g.h(tx,tx+7,2,'#C8433A'); g.h(tx+2,tx+5,1,'#C8433A'); g.p(tx+3,0,'#C8433A'); g.p(tx+4,0,'#C8433A');
+    g.h(tx-1,tx+8,27,'#8D8A78'); g.h(tx-1,tx+8,28,'#6E706C');
+    if(P.snowy){ for(let i=0;i<9;i++){ const bx=2+Math.round(i*5.4), by=21+Math.round(-Math.sin(i/8*Math.PI)*3); g.h(bx,bx+4,by,SNOW); } g.h(tx,tx+7,2,SNOW); }
+    g.outline(); return {c:g.canvas(), ax:30, ay:31, lamp:[54,5], splash:true}; },
+};
+/* 부두 · 배 · 바위 (건물 아님) */
+function sDock(){ const g=Grid(42,12);
+  g.r(1,2,40,3,P.wood); for(let x=3;x<41;x+=4) g.v(x,2,4,P.woodD); g.h(1,40,2,mix(P.wood,'#FFFFFF',0.25));
+  [4,14,24,34].forEach(x=>g.v(x,5,11,P.woodD)); g.v(39,0,1,P.woodD); g.p(39,0,'#F2C14E');
+  g.outline(); return {c:g.canvas(), ax:21, ay:11}; }
+function sShip(f){ const g=Grid(28,30), hull=P.woodD, hullL=P.wood, sail='#F7E9C6', sailS='#DCC9A0';
+  g.v(13,3,22,INK); g.h(13,17,3,'#C8433A'); g.h(14,16,4,'#C8433A');
+  for(let y=5;y<=19;y++){ const t=(y-5)/14, w=Math.round(2+t*9+(f?Math.sin(t*Math.PI)*2:Math.sin(t*Math.PI)*1)); g.h(14,14+w,y,sail); g.p(14+w,y,sailS); }
+  for(let y=8;y<=18;y++){ const w=Math.round((y-8)/10*6); g.h(13-w,12,y,sail); }
+  for(let y=22;y<=27;y++){ const k=y-22, x0=1+Math.round(k*1.3), x1=26-Math.round(k*1.3); g.h(x0,x1,y,hull); } g.h(1,26,22,hullL); g.h(4,23,24,shade(hull,0.8));
+  g.outline(); return {c:g.canvas(), ax:14, ay:28}; }
+function sRowboat(){ const g=Grid(16,7); for(let y=2;y<=5;y++){ const k=y-2; g.h(1+k,14-k,y,P.wood); } g.h(1,14,2,mix(P.wood,'#FFFFFF',0.3)); g.h(3,12,4,P.woodD); g.v(5,0,2,P.woodD); g.p(4,0,P.woodD);
+  g.outline(); return {c:g.canvas(), ax:8, ay:6}; }
+
+/* 나무 — 잎 픽셀 목록을 만들어 두고, 그릴 때 위로 갈수록 바람만큼 밀어(기울여) 흔든다 */
+function treePixels(r,seed){ const px=[]; const out=shade(P.treeD,0.7);
+  for(let j=-r-1;j<=r+1;j++) for(let i=-r-1;i<=r+1;i++){ const d=Math.hypot(i,j*1.08); if(d>r+0.5) continue;
+    let c = d>r-0.6 ? out : (Math.hypot(i+r*0.35,j+r*0.4)<r*0.55 ? P.treeL : (i+j>r*0.5 ? P.treeD : P.tree));
+    if(c===P.tree && hash(i+seed*13,j+seed*7)<0.18) c=P.treeD;
+    if(c===P.tree && hash(i+seed*5,j+seed*3)<0.12) c=P.treeL;
+    if(P.snowy && j<-r*0.25 && d<=r-0.6 && hash(i+seed,j)<0.75) c=SNOW;
+    px.push([i,j,c,(j+r)/(2*r)]); }
+  return px; }
+
+/* 구름 — 둥근 덩어리 몇 개를 합치고 아래 두 줄은 그늘 */
+function makeCloud(w,h,seed){ const g=Grid(w,h), bumps=[];
+  const n=3+Math.floor(hash(seed,1)*3); for(let i=0;i<n;i++) bumps.push([w*(0.2+0.6*i/(n-1||1)), h*(0.35+hash(seed,i+5)*0.3), h*(0.35+hash(seed,i+9)*0.3)]);
+  const hi=mix(P.cloud,'#FFFFFF',0.6);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const flat=y>=h-3&&x>w*0.14&&x<w*0.86; let inn=flat; for(const [bx,by,br] of bumps) if(Math.hypot(x-bx,(y-by)*1.3)<=br) inn=true;
+    if(inn) g.p(x,y, y>=h-2?P.cloudSh : (y<h*0.45&&hash(x,y+seed)<0.3?hi:P.cloud)); }
+  return g.canvas(); }
+
+/* ============================================================
+   ④ 캐시 다시 만들기 (계절·날씨·흉년이 바뀔 때만)
+   ============================================================ */
+let BG, SHALLOW, ISLAND, SPR={}, DOCK, SHIP, ROWBOAT, TREEPX, CLOUDS, FOG, ISLEPROPS=[];
+function rebuild(){
+  P=palette(ST.season,ST.weather,ST.famine); WINDK=WIND[ST.weather]||1;
+  BG=makeBG(); SHALLOW=makeShallow(); ISLAND=makeIsland();
+  SPR={}; for(const k in BUILD) SPR[k]=BUILD[k]();
+  DOCK=sDock(); SHIP=[sShip(0),sShip(1)]; ROWBOAT=sRowboat();
+  TREEPX=TREES.map(([x,y,r],i)=>isleTree(r,i+1)); ISLEPROPS=isleProps();
+  const storm=ST.weather==='storm'||ST.weather==='rain';
+  CLOUDS=[ {y:30,w:28,h:9, v:1.6,x0:80, s:11}, {y:12,w:46,h:14,v:3.2,x0:10, s:22}, {y:22,w:34,h:11,v:2.4,x0:170,s:33}, {y:4, w:58,h:17,v:4.6,x0:240,s:44},
+    ...(storm?[{y:16,w:64,h:18,v:5.5,x0:120,s:55},{y:36,w:50,h:12,v:3.8,x0:300,s:66}]:[]) ].map(o=>({...o, c:makeCloud(o.w,o.h,o.s)}));
+  FOG=null; if(ST.weather==='fog'){ FOG=mk(W*2,30); const fx=FOG.getContext('2d'); fx.fillStyle='#EEF2F2'; for(let y=0;y<30;y++){ const k=1-Math.abs(y-15)/15; for(let x=0;x<W*2;x++) if(bay(x,y)<k*0.55*(0.6+0.4*vnoise(x,y,20))) fx.fillRect(x,y,1,1); } }
+}
+
+/* ============================================================
+   ⑤ 움직이는 것들 — 입자(먼지·물보라·반짝이·바람결·꽃잎) · 비/눈 · 낙하
+   ============================================================ */
+const parts=[];
+function spawn(o){ parts.push(Object.assign({vx:0,vy:0,g:0,s:1,life:1,age:0,kind:'dot'},o)); }
+let rain=[], snow=[];
+function weatherInit(){
+  rain=[]; snow=[];
+  const nr=ST.weather==='storm'?220:ST.weather==='rain'?130:0, ns=ST.weather==='snow'?110:(P.season==='winter'&&ST.weather==='clear'?18:0);
+  for(let i=0;i<nr;i++) rain.push({x:RND()*W, y:RND()*H, v:150+RND()*90, ty:HZ+4+RND()*(H-HZ-4)});
+  for(let i=0;i<ns;i++) snow.push({x:RND()*W, y:RND()*H, v:7+RND()*12, s:RND()<0.25?2:1, ph:RND()*6});
+}
+
+/* 낙하 연출 — 자리 깜빡임(PRE) → 떨어짐(FALL) → 쿵·찌그러짐(SQ) → 통통(BO) → 반짝(SP) */
+const PRE=0.4, FALL=0.7, SQ=0.16, BO=0.32, SP=1.3;
+const drops=new Map();          // id → {t0, landed}
+let SHAKE=0;
+function queueDrop(id,delay){ drops.set(id,{t0:CLOCK+delay, landed:false}); }
+function dropPhase(id){ const d=drops.get(id); if(!d) return null; const e=CLOCK-d.t0;
+  if(e<0) return {ph:'wait',e}; if(e<PRE) return {ph:'mark',e}; if(e<PRE+FALL) return {ph:'fall',p:(e-PRE)/FALL};
+  if(e<PRE+FALL+SQ) return {ph:'squash',q:(e-PRE-FALL)/SQ}; if(e<PRE+FALL+SQ+BO) return {ph:'bounce',b:(e-PRE-FALL-SQ)/BO};
+  if(e<PRE+FALL+SQ+BO+SP) return {ph:'sparkle',s:(e-PRE-FALL-SQ-BO)/SP}; return {ph:'done'}; }
+function land(id){
+  const pl=PLOTS[id], sp=SPR[id], w=sp.c.width, sea=!!pl.sea;
+  SHAKE=STILL?0:0.28;
+  const L=pl.x-sp.ax, Rr=L+w;
+  if(sea){ for(let i=0;i<26;i++) spawn({x:L+RND()*w, y:pl.y-8, vx:(RND()-0.5)*40, vy:-(30+RND()*55), g:150, life:0.6+RND()*0.4, c:RND()<0.5?'#FFFFFF':P.crest, s:RND()<0.3?2:1});
+    for(let k=0;k<3;k++) spawn({kind:'ring', x:pl.x, y:pl.y-5, life:0.8, delay:k*0.12, rx:w*0.45, c:P.foam}); }
+  else {
+    const dust=[mix(P.path,'#FFFFFF',0.35),P.pathL,mix(P.grassL,'#FFFFFF',0.3)];
+    for(let i=0;i<22;i++){ const side=i%2?1:-1; spawn({x:(side>0?Rr-2:L+2)+(RND()-0.5)*4, y:pl.y-1-RND()*3, vx:side*(14+RND()*34), vy:-(6+RND()*22), g:40, life:0.5+RND()*0.45, c:dust[i%dust.length], s:RND()<0.35?2:1}); }
+    spawn({kind:'ring', x:pl.x, y:pl.y-1, life:0.35, rx:w*0.55, c:mix(P.pathL,'#FFFFFF',0.3)});
+    if(id==='reservoir') for(let i=0;i<10;i++) spawn({x:pl.x+(RND()-0.5)*20, y:pl.y-10, vx:(RND()-0.5)*30, vy:-(25+RND()*30), g:140, life:0.6, c:'#BDE6F0'});
+  }
+  if(EMBED && window.parent!==window){ try{ window.parent.postMessage({src:'islandlord-scene', type:'landed', id},'*'); }catch(e){} }
+}
+
+/* ============================================================
+   ⑥ 한 장 그리기
+   ============================================================ */
+const cv=document.getElementById('cv'), C=cv.getContext('2d');
+let CLOCK=0, T=0;
+const MOTION=6/5;   // 게임 섬(scene_v2.html)은 프레임 시간 계산 버그로 MOTION 1/5가 실제로는 6배(=6/5)로 보인다. 같은 빠르기로 보이게 맞춤
+const R=(x,y,w,h,col)=>{ C.fillStyle=col; C.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h)); };
+
+function drawWaves(){
+  const rows=17, storm=ST.weather==='storm', amp=storm?1.9:ST.weather==='rain'?1.3:1;
+  for(let i=0;i<rows;i++){
+    const d=i/(rows-1), y0=HZ+2+Math.round(Math.pow(d,1.55)*(H-HZ-4));
+    const len=Math.round(2+d*11*(storm?1.3:1)), sp=Math.round(12+d*34), vx=(3+d*15)*WINDK, ph=hash(i,77)*sp;
+    for(let k=-1;k*sp<W+sp;k++){
+      const x=Math.round(((k*sp+ph+T*vx)%(W+sp)+(W+sp))%(W+sp))-sp, kk=k+Math.floor((T*vx+ph)/(W+sp))*99;
+      const life=Math.sin(T*(0.7+d*0.6)+kk*2.1+i*1.7); if(life<-0.55) continue;   // 물마루가 생겼다 사라졌다
+      const bob=Math.round(Math.sin(T*1.7+kk*1.3+i)*(0.4+d*1.3)*amp), y=y0+bob, L=Math.max(2,Math.round(len*(0.6+0.4*life)));
+      if(d<0.25){ R(x,y,L,1,P.crest); continue; }                               // 먼바다 — 짧은 반짝 선
+      R(x+1,y+1,L,1,P.crestSh);                                                  // 아랫그림자 → 입체
+      R(x,y,L,1,P.crest);
+      if(d>0.45){ const m=Math.round(L*0.3); R(x+m,y-1,L-2*m,1,P.crest);            // 가운데가 솟은 물마루
+        if((storm||d>0.8) && life>0.3) R(x+m+1,y-2,Math.max(1,L-2*m-2),1,P.foam); }   // 앞바다·태풍엔 흰 거품 머리
+    }
+  }
+}
+function drawGlitter(){
+  if(!(ST.weather==='clear'||ST.weather==='snow')) return;
+  const f=Math.floor(T*7);
+  for(let i=0;i<18;i++){ const y=HZ+2+i*2+Math.floor(i*i*0.06); const spread=4+i*1.2;
+    if(hash(i,f+i*3)<0.45) continue; const x=262+Math.round((hash(i*7,f)-0.5)*spread*2); R(x,y,1+(hash(i,f)<0.3?1:0),1,'#FFFFFF'); }
+}
+function drawFoam(){
+  // 섬 둘레 — 밀려왔다(밖으로) 빠지는(안으로) 거품선 두 겹. 뒤쪽은 섬이 가린다
+  const N=420;
+  for(let i=0;i<N;i++){ const th=i/N*Math.PI*2, w=wob(th), cos=Math.cos(th), sin=Math.sin(th);
+    const swash=1.125+0.022*Math.sin(T*1.25*Math.max(0.6,WINDK*0.6)+th*3)+0.01*Math.sin(T*2.3+th*7);
+    const broken=Math.sin(th*46-T*2.2*WINDK); if(broken<-0.35) continue;
+    const x=IS.cx+cos*IS.rx*w*swash, y=IS.cy+IS.ch+sin*IS.ry*w*swash; R(x,y,1,1,P.foam);
+    if(broken>0.6){ const s2=swash+0.05+0.02*Math.sin(T*1.25+th*3+1.4); R(IS.cx+cos*IS.rx*w*s2, IS.cy+IS.ch+sin*IS.ry*w*s2,1,1,mix(P.foam,P.shallow,0.45)); } }
+}
+const ROCKS=[[22,155,7],[60,174,6],[14,112,5]];
+function drawRocks(){
+  ROCKS.forEach(([x,y,w],i)=>{ R(x-w/2,y-3,w,3,'#8D8A78'); R(x-w/2+1,y-4,w-2,1,'#B3B0A2'); R(x-w/2,y,w,1,'#5E5C56');
+    const p=(Math.sin(T*1.6+i*2)+1)/2; R(x-w/2-1-Math.round(p*2),y,w+2+Math.round(p*4),1,P.foam);
+    if(!STILL && hash(i,Math.floor(T*1.3*WINDK))>0.82 && hash(i+9,Math.floor(T*12))>0.9) for(let k=0;k<3;k++) spawn({x:x+(RND()-0.5)*w,y:y-3,vx:(RND()-0.3)*18*WINDK,vy:-(14+RND()*18),g:90,life:0.45,c:P.foam}); });
+}
+function drawClouds(){
+  CLOUDS.forEach(o=>{ const span=W+o.w+10, x=Math.round(((o.x0+T*o.v*WINDK)%span+span)%span)-o.w; C.drawImage(o.c,x,o.y+Math.round(Math.sin(T*0.3+o.s)*0.6)); });
+}
+const GULLS=[[40,26,9],[150,18,12],[230,34,7]];
+function drawGulls(){
+  if(ST.weather==='storm') return; const col=ST.season==='winter'?'#4E5A66':'#3A4652';
+  GULLS.forEach(([x0,y0,v],i)=>{ const span=W+20, x=Math.round(((x0+T*v*(0.6+WINDK*0.4))%span+span)%span)-10, y=Math.round(y0+Math.sin(T*0.8+i*2)*4), f=Math.floor(T*5+i)%3;
+    if(f===0){ R(x-2,y,1,1,col); R(x-1,y-1,1,1,col); R(x,y,1,1,col); R(x+1,y-1,1,1,col); R(x+2,y,1,1,col); }
+    else { R(x-2,y-1,2,1,col); R(x,y,1,1,col); R(x+1,y-1,2,1,col); } });
+}
+function drawTree(i){
+  const [x,y,r]=TREES[i], px=TREEPX[i], sway=(Math.sin(T*(1.6+WINDK*0.5)+i*1.9)*(0.6+WINDK*0.55)+Math.sin(T*3.7+i)*0.25*WINDK)*(px.swayK||1), cy=y-4-r;
+  if(!px.noTrunk){ R(x-1,y-4,2,4,P.woodD); R(x-1,y-4,1,4,shade(P.woodD,0.75)); }   // v3 야자수·마른 나무는 줄기를 직접 그린다
+  for(const [i2,j,c,fr] of px){ const off=Math.round(sway*(1-fr)); C.fillStyle=c; C.fillRect(x+i2+off,cy+j,1,1); }
+}
+function drawStakes(id){ const pl=PLOTS[id], sp=SPR[id]; if(!sp||pl.sea) return; const w=sp.c.width-6, L=pl.x-Math.round(w/2), y=pl.y-3, d=10;
+  [[L,y-d],[L+w,y-d],[L,y],[L+w,y]].forEach(([sx,sy])=>{ R(sx,sy-2,1,3,P.woodD); R(sx,sy-2,1,1,'#E8D4A8'); }); }
+function drawSpr(sp,x,y,sx=1,sy=1){ const w=sp.c.width, h=sp.c.height;
+  if(sx===1&&sy===1){ C.drawImage(sp.c,Math.round(x-sp.ax),Math.round(y-sp.ay)); return; }
+  const W2=Math.round(w*sx), H2=Math.round(h*sy); C.drawImage(sp.c,Math.round(x-sp.ax*sx),Math.round(y-sp.ay*sy),W2,H2); }
+function shadowAt(x,y,w,k){ const rw=Math.max(2,Math.round(w*0.5*k)); C.fillStyle=`rgba(20,30,20,${0.12+0.18*k})`; for(let j=-2;j<=2;j++){ const ww=Math.round(rw*Math.sqrt(1-(j/3)**2)); C.fillRect(Math.round(x-ww),Math.round(y+j),ww*2,1); } }
+function buildingExtras(id,x,y){
+  const sp=SPR[id], ox=Math.round(x-sp.ax), oy=Math.round(y-sp.ay);
+  if(sp.flag){ const fx=ox+sp.flag[0], fy=oy+sp.flag[1]; R(fx,fy-9,1,10,INK); const fr=Math.floor(T*(4+WINDK*2))%3, col=sp.flagCol||(P.season==='autumn'?'#F2C14E':'#C8433A'), fl=sp.flagLen||6;
+    for(let j=0;j<4;j++){ const len=fl-Math.floor(j/3), wave=[0,1,0,-1][(j+fr)%4]; for(let i=1;i<=len;i++) R(fx+i,fy-9+j+(i>3?wave:0),1,1,i===len?shade(col,0.8):col); } }
+  if(sp.smoke && !STILL && hash(Math.floor(T*3),5)<0.5 && CLOCK-(sp._last||0)>0.32/MOTION){ sp._last=CLOCK; spawn({kind:'smoke',x:ox+sp.smoke[0],y:oy+sp.smoke[1],vx:6*WINDK*MOTION,vy:-7*MOTION,life:2.2/MOTION,c:'#E8E6E0'}); }
+  if(sp.water && !P.snowy){ const f=Math.floor(T*5); for(let k=0;k<3;k++){ if(hash(k,f)<0.4) continue; const a=hash(k*3,f)*Math.PI*2, rr=hash(k*5,f)*0.8;
+      R(ox+sp.water.cx+Math.cos(a)*sp.water.rx*rr, oy+sp.water.cy+Math.sin(a)*sp.water.ry*rr,1+(k===0?1:0),1,'#FFFFFF'); } }
+  if(sp.lamp){ const on=(Math.sin(T*2.4)>-0.2)||ST.weather==='storm'; if(on){ const lx=ox+sp.lamp[0], ly=oy+sp.lamp[1]; R(lx-1,ly-1,2,2,'#FFF6C0');
+      if(ST.weather!=='clear'||P.season==='autumn'){ const dir=Math.sin(T*1.2)>0?1:-1; for(let i=2;i<9;i++) if(bay(lx+i*dir,ly)<0.5) R(lx+i*dir,ly-Math.floor(i/4),1,1,'#FFF2B0'); } } }
+  if(sp.splash && !STILL && hash(Math.floor(T*1.1*WINDK),31)>0.55 && CLOCK-(sp._sp||0)>0.9){ sp._sp=CLOCK; const L=ox+4; for(let k=0;k<6+WINDK*3;k++) spawn({x:L+RND()*44,y:oy+22,vx:(RND()-0.2)*16,vy:-(16+RND()*22*Math.min(2,WINDK)),g:110,life:0.55,c:RND()<0.6?P.foam:P.crest}); }
+}
+
+function drawWeather(dt){
+  // 바람결 — 하늘·바다 위를 빠르게 지나가는 얇은 선 (끝이 살짝 말린다)
+  if(!STILL && RND()<dt*(0.8+WINDK*1.6)*MOTION) spawn({kind:'streak', x:-12+RND()*W*0.7, y:4+RND()*(HZ+50), vx:(55+WINDK*28)*MOTION, life:(0.8+RND()*0.7)/MOTION, len:4+Math.floor(RND()*7)});
+  // 계절 날림 — 봄 꽃잎 · 여름 홀씨 · 가을 낙엽
+  if(P.drift && !STILL && (ST.weather==='clear'||ST.weather==='fog') && RND()<dt*(P.season==='summer'?0.8:2.2)*MOTION){ const c=P.drift[Math.floor(RND()*P.drift.length)];
+    spawn({kind:'leaf', x:-4, y:20+RND()*120, vx:(14+WINDK*10+RND()*8)*MOTION, vy:(4+RND()*6)*MOTION, life:12/MOTION, c, s:P.season==='autumn'&&RND()<0.4?2:1, ph:RND()*6}); }
+  // 비
+  if(rain.length){ const col=ST.weather==='storm'?'#C9D6E2':'#B8CCDD', slant=0.25+WINDK*0.18;
+    for(const d of rain){ d.y+=d.v*dt; d.x+=d.v*slant*dt; if(d.y>=d.ty){ if(d.ty>HZ+2) R(d.x-1,d.ty,3,1,mix(P.crest,'#FFFFFF',0.3)); d.y=-6-RND()*30; d.x=RND()*(W+40)-40; d.ty=HZ+4+RND()*(H-HZ-4); }
+      R(d.x,d.y,1,1,col); R(d.x-1,d.y-2,1,2,col); if(ST.weather==='storm') R(d.x-2,d.y-4,1,2,col); } }
+  // 눈
+  for(const s of snow){ s.y+=s.v*dt; s.x+=(Math.sin(CLOCK*1.3+s.ph)*6+WINDK*5)*dt; if(s.y>H){ s.y=-2; s.x=RND()*W; } if(s.x>W+2) s.x=-2; R(s.x,s.y,s.s,s.s,'#FFFFFF'); }
+  // 안개
+  if(FOG){ [[HZ-14,4],[HZ+20,7],[HZ+58,10]].forEach(([y,v],i)=>{ const x=-Math.round((T*v*WINDK+i*90)%W); C.drawImage(FOG,x,y); }); }
+}
+let FLASH=0, NEXTBOLT=3, BOLT=null;
+function drawLightning(dt){
+  if(ST.weather!=='storm'||STILL) return;
+  NEXTBOLT-=dt; if(NEXTBOLT<=0){ NEXTBOLT=3.5+RND()*5; FLASH=0.16; const x0=30+RND()*260, pts=[[x0,0]]; let x=x0,y=0; while(y<HZ+4){ y+=4+RND()*7; x+=(RND()-0.5)*12; pts.push([x,y]); } BOLT=pts; }
+  if(FLASH>0){ FLASH-=dt; C.fillStyle=`rgba(255,255,240,${0.28*Math.max(0,FLASH/0.16)})`; C.fillRect(0,0,W,H);
+    if(BOLT){ for(let k=1;k<BOLT.length;k++){ const [a,b]=BOLT[k-1], [c2,d2]=BOLT[k], n=Math.max(Math.abs(c2-a),Math.abs(d2-b)); for(let s=0;s<=n;s++) R(a+(c2-a)*s/n,b+(d2-b)*s/n,1,1,'#FFFBE0'); } } }
+}
+function drawParts(dt){
+  for(let i=parts.length-1;i>=0;i--){ const p=parts[i];
+    if(p.delay>0){ p.delay-=dt; continue; }
+    p.age+=dt; if(p.age>=p.life){ parts.splice(i,1); continue; }
+    const k=p.age/p.life;
+    if(p.kind==='ring'){ const rx=Math.max(2,p.rx*(0.4+k*0.9)), ry=rx*0.28; for(let a=0;a<40;a++){ if((a+Math.floor(k*6))%3===0) continue; const t=a/40*Math.PI*2; R(p.x+Math.cos(t)*rx,p.y+Math.sin(t)*ry,1,1,p.c); } continue; }
+    if(p.kind==='streak'){ p.x+=p.vx*dt; const fade=Math.sin(k*Math.PI); for(let j=0;j<p.len;j++){ if(bay(j,Math.floor(p.y))>fade) continue; R(p.x+j,p.y,1,1,'#FFFFFF'); } if(fade>0.5) R(p.x+p.len,p.y-1,1,1,'#FFFFFF'); continue; }
+    if(p.kind==='leaf'){ p.x+=p.vx*dt; p.y+=(p.vy+Math.sin(CLOCK*3*MOTION+p.ph)*8*MOTION)*dt; if(p.x>W+4||p.y>H){ p.life=0; continue; } R(p.x,p.y,p.s,1,p.c); if(p.s===1&&Math.sin(CLOCK*5+p.ph)>0.3) R(p.x+1,p.y,1,1,p.c); continue; }
+    if(p.kind==='smoke'){ p.x+=p.vx*dt*(0.4+k); p.y+=p.vy*dt; const s=k<0.3?1:2; if(bay(Math.floor(p.x),Math.floor(p.y))<1-k*0.8) R(p.x,p.y,s,s,p.c); continue; }
+    if(p.kind==='spark'){ const on=Math.sin((p.age+p.ph)*16)>-0.2; if(!on) continue; const s=k<0.5?2:1; R(p.x,p.y,1,1,'#FFFFFF'); R(p.x-s,p.y,1,1,'#FFF2A0'); R(p.x+s,p.y,1,1,'#FFF2A0'); R(p.x,p.y-s,1,1,'#FFF2A0'); R(p.x,p.y+s,1,1,'#FFF2A0'); continue; }
+    p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; R(p.x,p.y,p.s,p.s,p.c);
+  }
+}
+
+
+/* </SCENE_V2 COPY> ================================================================
+   여기부터 주사위 섬 연출. 섬 그리기는 위에서 옮긴 게임 섬 그대로 쓰고, 영주 집 · 풀 · 나무 · 꽃 · 땅 장식 · 소품은
+   island_faces_v3.js(ISLE = 주사위 값)가 정한다. 날씨 · 하늘 · 배 · 날아다니는 것은 이 애니메이션에서만
+   ================================================================================ */
+const Q=new URLSearchParams(location.search);
+let FACE=Math.min(6,Math.max(1,+Q.get('face')||1));
+const spr=(w,h,fn,ax,ay)=>{ const g=Grid(w,h); fn(g); g.outline(); return {c:g.canvas(), ax:ax??Math.floor(w/2), ay:ay??h-1}; };
+/* 소품 스프라이트 (v1.0에서 쓰던 것) */
+const DS={
+  house:(roof,wall)=>spr(17,15,g=>{ g.r(11,1,2,4,'#7A6A5A'); for(let y=2;y<=7;y++){ const k=7-y; g.h(2+k,14-k,y,roof); g.p(2+k,y,mix(roof,'#FFFFFF',0.3)); }
+      g.r(3,8,11,6,wall); g.r(11,8,3,6,shade(wall,0.85)); g.r(7,10,3,4,'#5A3C28'); g.r(4,9,2,2,'#FFE9A8'); g.r(11,9,2,2,'#FFE9A8'); }),
+  ruin:()=>spr(18,14,g=>{ const Wd='#5E5246', Wl='#74665A';
+      for(let y=3;y<=6;y++){ const k=6-y; g.h(2+k,8,y,'#3E322A'); } g.p(5,4,null); g.p(6,5,null);   // 반쯤 남은 지붕
+      g.r(3,7,12,6,Wd); for(let y=7;y<13;y++) if(y%2) g.p(3+(y%5),y,Wl);
+      g.r(11,7,4,2,null); g.p(12,9,null); g.p(14,9,null);                                         // 무너진 모서리
+      g.r(7,9,3,4,'#120E0C');                                                                      // 문 없는 구멍
+      g.r(4,8,2,2,'#2A2420'); g.p(4,8,'#8A6A48'); g.p(5,9,'#8A6A48');                              // 판자로 막은 창
+      for(let i=0;i<5;i++) g.p(12+i,12-Math.floor(i/2),'#7A5A3A'); g.p(16,11,'#7A5A3A'); }),
+  hut:()=>spr(14,11,g=>{ for(let y=1;y<=4;y++){ const k=4-y; g.h(1+k,12-k,y,'#B8964E'); } g.p(4,3,'#8A6E3A'); g.p(5,3,'#8A6E3A'); g.p(9,2,'#7A9AB0'); g.p(10,3,'#7A9AB0');   // 기운 지붕
+      g.r(3,5,8,5,'#8A6A48'); g.v(5,5,9,'#6A4C32'); g.v(8,5,9,'#6A4C32'); g.r(6,7,2,3,'#3A2A1E'); }),
+  barn:()=>spr(22,18,g=>{ const R='#B4483A', RD='#8A3329', T='#EFE0BE';
+      for(let y=1;y<=7;y++){ const k=7-y; g.h(2+Math.round(k*1.3),19-Math.round(k*1.3),y,'#5E4A3E'); }
+      for(let y=4;y<=7;y++){ const k=7-y; g.h(5+Math.round(k*1.3),16-Math.round(k*1.3),y,R); } g.r(9,4,4,3,'#3A2A20'); g.p(10,5,'#F2C14E'); g.p(11,6,'#F2C14E');
+      g.r(3,8,16,9,R); for(let x=5;x<18;x+=3) g.v(x,8,16,RD); g.h(3,18,8,T);
+      g.r(7,10,8,7,T); g.r(8,11,6,6,RD); for(let i=0;i<6;i++){ g.p(8+i,11+i,T); g.p(13-i,11+i,T); } }),
+  sacks:()=>spr(9,6,g=>{ g.r(1,2,3,3,'#E8D29A'); g.p(2,1,'#B89A5A'); g.r(5,2,3,3,'#E8D29A'); g.p(6,1,'#B89A5A'); g.r(3,1,3,3,'#F2E0AE'); g.p(4,0,'#B89A5A'); }),
+  market:()=>spr(22,15,g=>{ g.v(2,4,13,'#5A3C28'); g.v(19,4,13,'#5A3C28');
+      for(let y=2;y<=5;y++){ const ins=Math.round((5-y)*0.6); for(let x=1+ins;x<=20-ins;x++) g.p(x,y,Math.floor((x-1)/3)%2?'#F6EBD0':'#D2453A'); }
+      g.r(3,6,16,3,'#4A3A2E'); g.p(5,8,'#D2453A'); g.p(7,8,'#F2C14E'); g.p(9,8,'#8FB6CF'); g.p(12,8,'#E0832E'); g.p(15,8,'#4FA046'); g.p(16,8,'#D2453A');
+      g.r(2,9,18,2,'#A8734D'); g.h(2,19,9,'#C99A6A'); g.r(3,11,16,3,'#5A3C28'); }),
+  mansion:()=>spr(38,30,g=>{ const G='#E8B83A', GD='#B88A1E', GL='#FFE08A', Wl='#F4EAD0', Ws='#D8C8A0';
+      [[4,9],[33,9]].forEach(([cx])=>{ for(let y=1;y<=7;y++){ const k=Math.round((y-1)*0.5); g.h(cx-k,cx+k,y,y<3?GL:G); } g.r(cx-3,8,7,19,Wl); g.v(cx+3,8,26,Ws); g.r(cx-1,12,2,3,'#FFE9A8'); g.r(cx-1,18,2,3,'#FFE9A8'); });
+      for(let y=6;y<=12;y++){ const k=12-y; g.h(8+k,29-k,y,G); g.p(8+k,y,GL); if(k%2) g.h(9+k,28-k,y,GD); } g.r(16,3,6,4,G); g.h(16,21,3,GL);
+      g.r(8,13,22,14,Wl); g.r(26,13,4,14,Ws); g.h(8,29,13,GD); g.h(8,29,19,GD);
+      for(let x=10;x<=27;x+=4){ g.r(x,15,2,3,'#FFE9A8'); if(x<16||x>21) g.r(x,21,2,3,'#FFE9A8'); }
+      g.r(16,20,6,7,'#6A3E1E'); g.h(17,20,19,G); g.p(18,23,G); g.p(19,23,G); g.r(17,9,4,3,'#C8433A'); g.r(18,10,2,1,GL);
+      g.h(5,32,27,'#D8D0C0'); g.h(13,24,28,'#E8E0D0'); g.h(11,26,29,'#C8C0B0'); }),
+  tree:(c,cd,cl)=>spr(11,13,g=>{ for(let j=-4;j<=4;j++) for(let i=-4;i<=4;i++){ const d=Math.hypot(i,j); if(d>4.3) continue; g.p(5+i,5+j, Math.hypot(i+1.5,j+1.5)<2?cl:(i+j>2?cd:c)); } g.r(5,9,1,3,'#5A3C28'); }),
+  palm:()=>spr(13,15,g=>{ for(let y=5;y<=13;y++) g.p(6+Math.round(Math.sin(y*0.4)*0.8),y,'#8A6A48');
+      [[-5,1],[-4,0],[-3,-1],[-2,-1],[-1,0],[1,0],[2,-1],[3,-1],[4,0],[5,1],[-3,1],[-2,2],[2,2],[3,1],[0,-1]].forEach(([i,j])=>g.p(6+i,4+j,'#3E9A4A')); g.p(6,4,'#5FBE56'); g.p(5,5,'#8A5A2A'); g.p(7,5,'#8A5A2A'); }),
+  dead:()=>spr(11,14,g=>{ const B='#5A4E44'; g.v(5,4,12,B); g.v(6,6,12,B); g.p(4,6,B); g.p(3,5,B); g.p(2,4,B); g.p(7,5,B); g.p(8,4,B); g.p(8,3,B); g.p(4,3,B); g.p(9,6,B); g.p(3,8,B); g.p(4,8,B); }),
+  field:(c,ct)=>spr(16,7,g=>{ for(let y=1;y<6;y++) g.h(1,14,y,y%2?'#8A6A45':'#6E5236'); for(let x=2;x<14;x+=2){ g.p(x,2,c); g.p(x,4,c); g.p(x,1,ct); g.p(x,3,ct); } }),
+  sparse:()=>spr(14,6,g=>{ for(let y=1;y<5;y++) g.h(1,12,y,y%2?'#9A7A50':'#7A5E3E'); [3,8,11].forEach(x=>{ g.p(x,2,'#C9A84A'); g.p(x,1,'#E2C25A'); }); }),
+  dock:()=>spr(22,7,g=>{ g.r(1,1,20,2,'#A8734D'); g.h(1,20,1,'#C99A6A'); [3,9,15,19].forEach(x=>g.v(x,3,6,'#5A3C28')); }),
+  rowboat:()=>spr(11,5,g=>{ for(let y=1;y<=3;y++) g.h(y,10-y,y,'#A8734D'); g.h(1,9,1,'#C99A6A'); }),
+  fishing:()=>spr(14,12,g=>{ g.v(6,0,8,'#5A3C28'); for(let y=1;y<=6;y++) g.h(7,7+Math.round(y*0.7),y,'#E8DCC0'); for(let y=8;y<=10;y++){ const k=y-8; g.h(1+k,12-k,y,'#7A5A3A'); } g.h(1,12,8,'#9A7A4A'); }),
+  merchant:(sail='#F7E9C6')=>spr(24,22,g=>{ [8,15].forEach((mx,i)=>{ g.v(mx,1+i,15,'#3A2A20'); for(let y=3+i;y<=12;y++){ const w=Math.round(3+Math.sin((y-3)/9*Math.PI)*1.5); g.h(mx-w,mx+w,y,sail); g.p(mx+w,y,shade(sail,0.85)); } });
+      g.h(8,11,1,'#C8433A'); for(let y=16;y<=20;y++){ const k=y-16; g.h(1+k,22-k,y,'#6A4A30'); } g.h(1,22,16,'#9A6A40'); g.h(3,20,18,'#F2C14E'); }),
+  guild:()=>spr(26,22,g=>{ g.v(12,0,15,'#2A2420'); g.h(13,17,1,'#C8433A'); g.h(13,16,2,'#C8433A');
+      for(let y=3;y<=13;y++){ const w=Math.round(6+Math.sin((y-3)/10*Math.PI)*2); g.h(12-w,12+w,y,'#7A1E1E'); }
+      for(let j=-2;j<=2;j++) for(let i=-2;i<=2;i++) if(Math.hypot(i,j)<=2.4) g.p(12+i,8+j,(i===0&&j===0)?'#3A2410':(i+j<-1?'#FFE08A':'#F2C14E'));   // 엽전 문장(가운데 구멍)
+      for(let y=16;y<=20;y++){ const k=y-16; g.h(1+k,24-k,y,'#2A2420'); } g.h(1,24,16,'#4A3A30'); for(let x=4;x<22;x+=4) g.p(x,18,'#8A7A60'); }),
+  shady:()=>spr(18,16,g=>{ g.v(8,0,11,'#1A1414'); for(let y=2;y<=10;y++){ const w=Math.round(2+(y-2)*0.5); g.h(8-w,8+w,y,'#2E2232'); }
+      [[7,4],[8,3],[9,4],[9,5],[8,6],[8,8]].forEach(([x,y])=>g.p(x,y,'#E8E0F0'));   // 물음표
+      for(let y=12;y<=14;y++){ const k=y-12; g.h(1+k,16-k,y,'#1A1414'); } g.h(1,16,12,'#3A2E36'); }),
+};
+
+/* 주사위 값마다: 날씨 · 흉년(누런 풀) · 처음부터 있는 건물 · 노을 하늘 */
+const FACES={
+  1:{ name:'빚더미 영지',     line:'선대가 남긴 빚 20닢을 안고 시작하는 섬', wx:'storm', famine:true },
+  2:{ name:'가난한 어부의 섬', line:'섬사람들이 아직 영주를 잘 믿지 않는 가난한 어부의 섬', wx:'rain' },
+  3:{ name:'평범한 섬',       line:'모자람도 넘침도 없는 평범한 섬', wx:'clear' },
+  4:{ name:'창고지기의 섬',   line:'낡았지만 튼튼한 곡물 창고가 있는 섬', wx:'clear', built:['warehouse'] },
+  5:{ name:'상인 집안의 섬',  line:'금화는 넉넉한데 곡식 창고가 빠듯한 상인 집안의 섬', wx:'clear' },
+  6:{ name:'부유한 섬',       line:'금고가 가득해서, 수상한 손님도 자주 찾아오는 부유한 섬', wx:'clear', sunset:true },
+};
+let F=FACES[FACE], AT=0, DONE=false, xparts=[], LANDED=new Set(), SPLASHED=false;
+const X={};   // 주사위 값별 소품 스프라이트
+
+function setup(face){
+  FACE=face; F=FACES[face]; ISLE=face;   // v3 섬 모양도 주사위 값으로
+  ST.season='spring'; ST.weather=F.wx; ST.famine=!!F.famine; ST.voyage=false; ST.built=new Set(F.built||[]);
+  // rebuild()와 같지만, 6은 하늘·바다를 노을로 바꾼 뒤 캐시를 만든다
+  P=palette(ST.season,ST.weather,ST.famine); WINDK=WIND[ST.weather]||1;
+  if(F.sunset){ Object.assign(P,{ sky:['#2A1E5A','#5A3488','#B04E86','#EE7C6A','#FFC86E'], sea:['#F2B46A','#D88E6A','#A86A78','#6E4E78','#4A3A6A'], sun:'#FFE8A0', glow:'#FFD8A0', sunY:68,
+      cloud:'#FFD0C0', cloudSh:'#D88A98', far:'#6A4070', crest:'#FFE4B0', crestSh:'#5A3A64', shallow:'#E8A878', shallow2:'#F4C890', foam:'#FFF4D8' }); }
+  BG=makeBG(); SHALLOW=makeShallow(); ISLAND=makeIsland();
+  SPR={}; for(const k in BUILD) SPR[k]=BUILD[k]();
+  DOCK=sDock(); SHIP=[sShip(0),sShip(1)]; ROWBOAT=sRowboat();
+  TREEPX=TREES.map(([x,y,r],i)=>isleTree(r,i+1)); ISLEPROPS=isleProps();
+  const storm=ST.weather==='storm'||ST.weather==='rain';
+  CLOUDS=[ {y:30,w:28,h:9, v:1.6,x0:80, s:11}, {y:12,w:46,h:14,v:3.2,x0:10, s:22}, {y:22,w:34,h:11,v:2.4,x0:170,s:33}, {y:4, w:58,h:17,v:4.6,x0:240,s:44},
+    ...(storm?[{y:16,w:64,h:18,v:5.5,x0:120,s:55},{y:36,w:50,h:12,v:3.8,x0:300,s:66}]:[]) ].map(o=>({...o, c:makeCloud(o.w,o.h,o.s)}));
+  FOG=null; weatherInit();
+  X.fishing=DS.fishing(); X.merchant=DS.merchant(); X.merchant2=DS.merchant('#FFF0D0'); X.guild=DS.guild(); X.shady=DS.shady();
+  AT=0; DONE=false; xparts=[]; parts.length=0; LANDED=new Set(); SPLASHED=false; FLASH=0; BOLT=null; NEXTBOLT=1.0; SKY_FW=0;
+  if(STILL||Q.has('end')) jump();
+  caption();
+}
+function jump(){ AT=Math.max(AT,3.05); SPLASHED=true; LANDED.add('manor'); (F.built||[]).forEach(id=>LANDED.add(id)); }
+
+/* 주사위 (9×9를 2배로) */
+const PIPS={1:[[4,4]],2:[[2,2],[6,6]],3:[[2,2],[4,4],[6,6]],4:[[2,2],[6,2],[2,6],[6,6]],5:[[2,2],[6,2],[4,4],[2,6],[6,6]],6:[[2,2],[6,2],[2,4],[6,4],[2,6],[6,6]]};
+function drawDie(x,y,face){ const s=2; R(x-s,y,11*s,9*s,INK); R(x,y-s,9*s,11*s,INK); R(x,y,9*s,9*s,'#FBF7EC'); R(x,y+7*s,9*s,2*s,'#D8D0C0'); R(x+7*s,y,2*s,9*s,'#E4DCCC');
+  PIPS[face].forEach(([i,j])=>R(x+i*s,y+j*s,s,s,face===1?'#C8433A':INK)); }
+
+/* 한 장 그리기 — 게임 섬(render)과 같은 순서 + 주사위 · 떠오르기 · 소품 */
+const HOME={x:160,y:125};                 // 주사위가 떨어지는 곳(영주 집 마당)
+let SKY_FW=0;
+function drawFace(dt){
+  C.setTransform(1,0,0,1,0,0); C.imageSmoothingEnabled=false;
+  let sx=0; if((FLASH>0.05&&F.wx==='storm')||SHAKE>0) sx=Math.round((RND()-0.5)*2);
+  C.fillStyle=P.sky[0]; C.fillRect(0,0,W,H); C.translate(sx,0);
+  C.drawImage(BG,0,0);
+  drawClouds(); drawGulls(); skyExtras(dt);
+  drawWaves(); drawGlitter();
+  // ① 주사위가 떨어져 풍덩
+  if(AT<0.9){ const p=Math.min(1,AT/0.7), y=-24+(HOME.y-(-24))*p*p, x=HOME.x+Math.round(Math.sin(AT*18)*(1-p)*5), face=AT<0.5?1+Math.floor(AT*14)%6:FACE;
+    if(AT<0.7) drawDie(x-9,y-9,face); else { const k=(AT-0.7)/0.2; C.save(); C.beginPath(); C.rect(0,0,W,HOME.y+6); C.clip(); drawDie(x-9,HOME.y-6+k*16,FACE); C.restore(); } }
+  if(AT>=0.7 && !SPLASHED){ SPLASHED=true; for(let i=0;i<26;i++) spawn({x:HOME.x+(RND()-0.5)*14,y:HOME.y+6,vx:(RND()-0.5)*70,vy:-(40+RND()*60),g:170,life:0.7,c:RND()<0.5?'#FFFFFF':P.crest,s:RND()<0.3?2:1});
+    spawn({kind:'ring',x:HOME.x,y:HOME.y+8,life:0.9,rx:60,c:P.foam}); }
+  // ② 게임과 똑같은 섬이 아래에서 떠오른다
+  if(AT>=0.75){ const p=Math.min(1,(AT-0.75)/0.75), e=1-Math.pow(1-p,3), off=Math.round((1-e)*70);
+    C.save(); C.translate(0,off);
+    C.drawImage(SHALLOW,0,0); drawFoam(); drawRocks(); C.drawImage(ISLAND,0,0);
+    const list=[];
+    TREES.forEach((t,i)=>list.push({y:t[1], f:()=>drawTree(i)}));
+    for(const id in PLOTS){ const pl=PLOTS[id];
+      if(id==='manor'||ST.built.has(id)){ const t0=id==='manor'?1.35:1.7; if(AT<t0){ list.push({y:pl.y-1,f:()=>{ if(!pl.always) drawStakes(id); }}); continue; }
+        list.push({y:pl.y, f:()=>{ const sp=SPR[id], q=Math.min(1,(AT-t0)/0.32); let yo=-Math.round((1-q*q)*(pl.y+sp.c.height)), sxk=1, syk=1;
+          if(q>=1){ if(!LANDED.has(id)){ LANDED.add(id); SHAKE=STILL?0:0.2; for(let k=0;k<14;k++){ const side=k%2?1:-1; spawn({x:pl.x+side*sp.c.width*0.45,y:pl.y-1,vx:side*(12+RND()*28),vy:-(6+RND()*16),g:40,life:0.5,c:mix(P.path,'#FFFFFF',0.35)}); } }
+            const b=(AT-t0-0.32)/0.3; if(b<1){ yo=-Math.round(Math.sin(b*Math.PI)*4); const sq=Math.max(0,1-b*3); sxk=1+0.2*sq; syk=1-0.18*sq; } }
+          shadowAt(pl.x-3,pl.y,sp.c.width,Math.min(1,q)); drawSpr(sp,pl.x,pl.y+yo,sxk,syk); if(q>=1) buildingExtras(id,pl.x,pl.y+yo); }}); }
+      else if(!pl.sea) list.push({y:pl.y-1, f:()=>drawStakes(id)});
+    }
+    list.push({y:149, f:()=>drawSpr(DOCK,292,149)});
+    frontProps(list);
+    list.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
+    C.restore();
+  }
+  seaExtras(dt);
+  drawParts(dt); drawX(dt);
+  drawWeather(dt); drawLightning(dt);
+}
+const bob=k=>Math.round(Math.sin(T*1.6+k)*(0.6+WINDK*0.4));
+/* 섬 위 · 부두 옆 소품 (섬과 함께 떠오른다) */
+function frontProps(list){
+  const add=(y,f)=>list.push({y,f}), on=t=>AT>=t;
+  if(FACE!==1 && FACE!==2) add(137,()=>drawSpr(SHIP[Math.floor(T*(1+WINDK*0.6))%2],300,137+bob(0)));     // 부두의 큰 배 (게임과 같음)
+  if(FACE!==2) add(158,()=>{ if(FACE===1){ C.save(); C.beginPath(); C.rect(0,0,W,159); C.clip(); drawSpr(ROWBOAT,274,162+bob(1)); C.restore(); } else drawSpr(ROWBOAT,274,158+bob(1)); });
+  if(on(1.6)) ISLEPROPS.forEach(o=>add(o.y,()=>drawSpr(o.sp,o.x,o.y)));   // v3 주사위 값별 소품 (게임 섬과 같음)
+  if(FACE===2){ add(160,()=>{ drawSpr(X.fishing,286,160+bob(2)); for(let i=0;i<7;i++) R(278-i,156+i+bob(2),1,1,'#C8BC98'); }); }
+}
+/* 바다 위 배 · 날아가는 것 (섬 앞) */
+function seaExtras(dt){
+  if(FACE===1){ const p=Math.max(0,Math.min(1,(AT-1.4)/1.8)), x=356-(356-292)*(1-Math.pow(1-p,2)); drawSpr(X.guild,x,166+bob(3));        // 빚 받으러 오는 길드 배
+    if(AT>1.7 && RND()<dt*7) xparts.push({k:'paper',x:160+(RND()-0.5)*20,y:96,vx:-(45+RND()*35),vy:-(8+RND()*8),life:3.5,age:0,ph:RND()*6}); }   // 바람에 날아가는 빚 문서
+  if(FACE===2){ const j=(AT*0.6)%3; if(j<0.6&&AT>1.6){ const a=j/0.6; R(236+a*14,172-Math.sin(a*Math.PI)*12,3,1,'#C8D4DC'); } }   // 펄쩍 뛰는 물고기
+  if(FACE===5){ const p=Math.max(0,Math.min(1,(AT-1.5)/1.6)); drawSpr(X.merchant,-20+60*(1-Math.pow(1-p,2)),172+bob(4));                  // 들어오는 무역선
+    if(AT>2 && RND()<dt*6) spawn({kind:'spark',x:258+RND()*30,y:132+RND()*10,life:0.4,ph:RND()*3}); }
+  if(FACE===6){ drawSpr(X.merchant2,36,172+bob(4)); const p=Math.max(0,Math.min(1,(AT-2)/3)); drawSpr(X.shady,-18+44*p,180+bob(5));    // 몰래 다가오는 수상한 배
+    if(AT>1.8 && RND()<dt*16) xparts.push({k:'coin',x:50+RND()*220,y:-4,vy:30+RND()*20,g:80,life:4,age:0,floor:104+RND()*56});      // 금화 비
+    if(AT>1.9 && RND()<dt*10) spawn({kind:'spark',x:130+RND()*60,y:80+RND()*36,life:0.4,ph:RND()*3}); }
+  if(FACE===4 && AT>2.1 && RND()<dt*4) spawn({kind:'spark',x:70+RND()*28,y:112+RND()*16,life:0.4,ph:RND()*3});
+}
+/* 하늘 소품 — 까마귀 · 불꽃놀이 · 수평선의 배 */
+function skyExtras(dt){
+  if(FACE===1){ for(let i=0;i<3;i++){ const a=T*1.5+i*2.1, x=160+Math.cos(a)*(34+i*10), y=56+Math.sin(a)*9, f=Math.floor(AT*6+i)%2;
+      R(x-3,y-f,2,1,'#0A0808'); R(x-1,y-1+f,1,1,'#0A0808'); R(x,y,1,1,'#0A0808'); R(x+1,y-1+f,1,1,'#0A0808'); R(x+2,y-f,2,1,'#0A0808'); } }
+  if(FACE===5||FACE===6){ const s=X.merchant2, p=Math.min(1,Math.max(0,(AT-1.5)/2.5)), x=FACE===5?-14+50*p:300-24*p; C.drawImage(s.c,Math.round(x-s.ax),Math.round(HZ+4-s.ay)); }
+  if(FACE===6 && AT>1.7 && AT-SKY_FW>0.5){ SKY_FW=AT; const x=40+RND()*240, y=14+RND()*34, cols=[['#FF6A8A','#FFD0DA'],['#7AE0FF','#E0F8FF'],['#FFE070','#FFFFFF'],['#B08AFF','#EADFFF']][Math.floor(RND()*4)];
+    for(let i=0;i<20;i++){ const a=i/20*Math.PI*2; spawn({x,y,vx:Math.cos(a)*40,vy:Math.sin(a)*40,g:26,life:0.8,c:cols[i%2],s:i%3?1:2}); } }
+}
+function drawX(dt){
+  for(let i=xparts.length-1;i>=0;i--){ const p=xparts[i]; p.age+=dt; if(p.age>=p.life){ xparts.splice(i,1); continue; }
+    if(p.k==='paper'){ p.x+=p.vx*dt; p.y+=(p.vy+Math.sin(p.age*6+p.ph)*14)*dt; const fl=Math.sin(p.age*9+p.ph)>0; R(p.x,p.y,fl?6:5,fl?4:3,'#F4F0E4'); R(p.x+1,p.y+1,3,1,'#9A9488'); continue; }
+    if(p.k==='coin'){ p.vy+=p.g*dt; p.y+=p.vy*dt; if(p.y>p.floor){ xparts.splice(i,1); spawn({kind:'spark',x:p.x,y:p.floor,life:0.3,ph:0}); continue; }
+      const fl=Math.floor(p.age*10)%2; R(p.x-(fl?1:0),p.y,fl?4:2,4,'#F2C14E'); R(p.x,p.y+1,1,2,'#FFF2A0'); }
+  }
+}
+
+/* 돌리기 — AT(연출 시간)는 실제 초, T(물결·바람)는 게임 섬과 같은 빠르기 */
+let lastNow=performance.now(), lastDraw=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  if(now-lastDraw<31) return;
+  const dt=Math.max(0,Math.min(0.1,(now-lastNow)/1000)); lastNow=now; lastDraw=now;
+  CLOCK+=dt; AT+=dt; if(!STILL) T+=dt*MOTION;
+  if(SHAKE>0) SHAKE-=dt;
+  drawFace(dt);
+  if(!DONE && AT>=3){ DONE=true; if(EMBED&&window.parent!==window){ try{ window.parent.postMessage({src:'islandlord-dice',type:'done',face:FACE},'*'); }catch(e){} } caption(); }
+}
+window.addEventListener('message',e=>{ const d=e.data; if(!d||d.src!=='islandlord') return; if(d.type==='skip') jump(); if(d.type==='face'&&FACES[d.face]) setup(d.face); });
+function caption(){ const el=document.getElementById('cap'); if(!el) return; el.innerHTML = DONE ? `<b>${FACE} — ${F.name}</b><small>${F.line}</small>` : `<b>🎲 굴러가는 중…</b><small>주사위 ${FACE}</small>`; }
+
+if(EMBED) document.body.classList.add('embed');
+setup(FACE);
+requestAnimationFrame(frame);
+
+if(!EMBED){
+  document.getElementById('stage').appendChild(cv);
+  const fb=document.getElementById('c-face');
+  const paint=()=>{ fb.innerHTML=[1,2,3,4,5,6].map(n=>`<button data-f="${n}" class="${n===FACE?'on':''}" aria-pressed="${n===FACE}">${'⚀⚁⚂⚃⚄⚅'[n-1]} ${n} ${FACES[n].name}</button>`).join(''); };
+  fb.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; setup(+b.dataset.f); paint(); });
+  const act=document.getElementById('c-act'); act.innerHTML='<button data-a="replay">↻ 다시 재생</button><button data-a="end">끝 장면</button>';
+  act.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(b.dataset.a==='replay') setup(FACE); else jump(); });
+  const fit=()=>{ const z=Math.max(1,Math.min(3,Math.floor((Math.min(document.documentElement.clientWidth-38,1000))/W))); document.getElementById('stage').style.width=(W*z+6)+'px'; };
+  window.addEventListener('resize',fit); fit(); paint();
+}
+</script>
+</body>
+</html>
