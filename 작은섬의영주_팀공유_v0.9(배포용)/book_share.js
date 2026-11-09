@@ -305,10 +305,9 @@
     const box = $('.book-actions');
     if(box){
       $('#book-pdf').insertAdjacentHTML('afterend',
-        '<button class="primary" id="book-kdl" type="button" hidden>⬇️ PDF 받기</button>' +
-        '<button class="primary" id="book-link" type="button" hidden>🔗 링크 복사 (카톡에 붙여 넣기)</button>' +
+        '<button class="primary" id="book-kdl" type="button" hidden>⬇️ PDF 다운</button>' +
+        '<button class="primary" id="book-link" type="button" hidden>🔗 파일 링크 복사</button>' +
         '<button class="secondary" id="book-mail" type="button" hidden>✉️ 메일로 보내기</button>');
-      box.insertAdjacentHTML('beforeend', '<button class="ghost" id="book-ext" type="button">🌐 크롬에서 열기</button><button class="ghost" id="book-copy" type="button" hidden>📋 주소 복사</button>');
       $('#book-kdl').addEventListener('click', onKakaoDownload); $('#book-link').addEventListener('click', onLink); $('#book-mail').addEventListener('click', onMail);
       $('#book-ext').addEventListener('click', onExternal); $('#book-copy').addEventListener('click', onCopy);
     }
@@ -317,7 +316,7 @@
   /* ── v0.9 [카톡공유] 💬 카톡으로 PDF 링크 보내기 ── */
   const KK = () => window.IslandKakao && IslandKakao.ready && IslandKakao.ready();
   const KK_LABEL = '💬 카톡으로 PDF 링크 보내기';
-  function showKk(){ const b = $('#book-kk'); if(b){ b.hidden = !KK(); b.textContent = state.links ? '💬 카톡 친구 고르기' : KK_LABEL; } }
+  function showKk(){ const b = $('#book-kk'); if(b){ b.hidden = !KK(); b.textContent = state.links ? '💬 카톡으로 결과 공유' : KK_LABEL; } }
   async function onKk(){
     if(!state.file || !KK()) return;
     const b = $('#book-kk');
