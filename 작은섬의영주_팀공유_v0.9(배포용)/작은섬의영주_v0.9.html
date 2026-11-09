@@ -8,6 +8,10 @@
       · 카카오 JavaScript SDK(KAKAO_SHARE.jsKey) → 기기 공유 창 → 링크 복사 순으로 시도
       · 카카오 앱은 새로 만들어 jsKey를 채워야 함 (만드는 법은 kakao_share.js 맨 위)
   - share_og.png(1200×630 대표 이미지) · <head>에 공유 미리보기(og:) 태그
+  - 📕 도감 책 「💬 카톡으로 PDF 링크 보내기」: PDF를 서버(book-pdfs, 7일)에 올리고 카톡 메시지 [PDF 열기] 버튼으로 보냄
+      · 버튼 주소는 게임 폴더의 pdf.html → 서버 PDF (카카오 앱에 등록할 도메인이 게임 주소 하나로 끝남)
+      · 카카오 키가 있을 때만 보임. 카톡 밖 브라우저는 첫 번째 누름에 올리고, 두 번째 누름에 친구 고르기
+  - 배포 주소: https://ashera2-kaist.github.io/kaist_final_project/작은섬의영주_팀공유_v0.9(배포용)/ (kakao_share.js gameUrl · og: 태그)
  v0.8 (2026-11-02) — 플레이 데이터 DB(4축 · 5영주) + 게임 뒤 설문 (검색어: [DB] · [설문])
   - 📕 도감 책: 표지 다음에 아이의 성향 분석 1쪽(v0.7.0.2 그대로) → 금융 개념 설명보다 먼저
   - DB(Supabase): db/islandlord_db.js v2 · db/schema_v2_dims4_survey.sql (먼저 SQL Editor에서 실행)
@@ -115,9 +119,10 @@
 <title>눈 떠 보니 섬 영주 v0.9</title>
 <!-- [카톡공유] 링크 미리보기 (카카오톡 · 메시지). og:image는 올린 뒤 절대 주소로 바꾸면 더 확실함 -->
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://ashera2-kaist.github.io/kaist_final_project/%EC%9E%91%EC%9D%80%EC%84%AC%EC%9D%98%EC%98%81%EC%A3%BC_%ED%8C%80%EA%B3%B5%EC%9C%A0_v0.9(%EB%B0%B0%ED%8F%AC%EC%9A%A9)/">
 <meta property="og:title" content="눈 떠 보니, 망한 섬의 영주?">
 <meta property="og:description" content="섬을 다스리며 금융 개념을 배우고, 나의 금융 성향을 알아보는 초등학생용 게임">
-<meta property="og:image" content="share_og.png">
+<meta property="og:image" content="https://ashera2-kaist.github.io/kaist_final_project/%EC%9E%91%EC%9D%80%EC%84%AC%EC%9D%98%EC%98%81%EC%A3%BC_%ED%8C%80%EA%B3%B5%EC%9C%A0_v0.9(%EB%B0%B0%ED%8F%AC%EC%9A%A9)/share_og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <link rel="preconnect" href="https://fonts.googleapis.com">

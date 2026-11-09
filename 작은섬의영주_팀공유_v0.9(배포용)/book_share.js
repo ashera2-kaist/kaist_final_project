@@ -12,6 +12,9 @@
      ③ 공유 창이 없는 곳(PC 브라우저 · 카카오톡 안 브라우저 · 파일로 연 경우 일부) → ⬇️ PDF 내려받기만 보인다
    한글 글꼴을 PDF에 넣지 않아도 되도록 쪽마다 그림으로 넣는다(글자 선택은 안 됨, 대신 화면과 똑같이 보임)
    콘솔에서: BookShare.make() → {blob, pages} · BookShare.state
+   v0.9 [카톡공유] 💬 카톡으로 PDF 링크 보내기 — PDF를 서버(book-pdfs, 7일)에 올리고, 카카오톡 메시지의 [PDF 열기] 버튼으로 보낸다
+     · 카카오 앱 키가 있을 때만 보임(kakao_share.js). 버튼 주소는 게임 폴더의 pdf.html → 서버 PDF (카카오에 등록할 도메인이 게임 주소 하나로 끝남)
+     · 카톡 밖 브라우저에서는 누를 때 처음 올리고, 한 번 더 눌러 친구를 고른다(올리는 동안 카카오 창이 막히지 않게)
    ============================================================ */
 (function(){
   'use strict';
@@ -156,7 +159,7 @@
           hint('PDF를 서버에 올리지 못했어요(인터넷 확인). 📄를 다시 누르거나, 아래 🌐 크롬에서 열기를 써 주세요. (' + (e && e.message || e) + ')'); }
         return;
       }
-      $('#book-dl').hidden = false;
+      $('#book-dl').hidden = false; showKk();
       const share = canShareFile(state.file); $('#book-share').hidden = !share;
       hint(share ? `준비됐어요! (${r.pages}쪽 · ${mb(r.blob.size)}) 📤를 누르고 카카오톡이나 Gmail을 골라 보내세요.`
         : `준비됐어요! (${r.pages}쪽 · ${mb(r.blob.size)}) 이 기기·브라우저에서는 바로 보내기를 쓸 수 없어요. ⬇️로 내려받은 뒤 카카오톡이나 메일에 붙여 보내 주세요.`
@@ -206,7 +209,7 @@
       headers: { 'apikey': SB.key, 'Content-Type': 'application/pdf', 'x-upsert': 'false', 'cache-control': '3600' } });
     if(!r.ok) throw new Error(`올리기 실패 ${r.status} ${(await r.text().catch(() => '')).slice(0, 120)}`);
     const pub = `${SB.url}/storage/v1/object/public/${SB.bucket}/${path}`;
-    return { view: pub, download: `${pub}?download=${encodeURIComponent(file.name)}` };
+    return { view: pub, download: `${pub}?download=${encodeURIComponent(file.name)}`, path };
   }
   async function copyText(t){
     try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
@@ -218,7 +221,7 @@
   async function afterMakeInApp(r){             // onMake가 PDF를 만든 뒤 카카오톡 안에서만 부른다
     hint('PDF를 보낼 수 있게 올리는 중이에요…', true);
     state.links = await uploadPdf(state.file);
-    ['#book-kdl', '#book-link', '#book-mail'].forEach(q => { const b = $(q); if(b) b.hidden = false; });
+    ['#book-kdl', '#book-link', '#book-mail'].forEach(q => { const b = $(q); if(b) b.hidden = false; }); showKk();
     hint(`준비됐어요! (${r.pages}쪽 · ${mb(r.blob.size)}) ⬇️ PDF 받기로 휴대폰에 저장하거나, 🔗 링크 복사 → 카톡 대화방에 붙여 넣기, ✉️ 메일로 보내기를 누르세요. 링크는 ${SB.keepDays}일 동안 열려요.`);
   }
   function onKakaoDownload(){ if(!state.links) return; location.href = state.links.download;
@@ -311,8 +314,31 @@
     }
   }
   const HINT_APP = `📄 PDF 만들기를 누르면 책이 PDF로 만들어져 ${SB.keepDays}일 동안 서버에 보관돼요. 그다음 ⬇️ 받기 · 🔗 카톡에 붙여 넣기 · ✉️ 메일로 보낼 수 있어요.`;
+  /* ── v0.9 [카톡공유] 💬 카톡으로 PDF 링크 보내기 ── */
+  const KK = () => window.IslandKakao && IslandKakao.ready && IslandKakao.ready();
+  const KK_LABEL = '💬 카톡으로 PDF 링크 보내기';
+  function showKk(){ const b = $('#book-kk'); if(b){ b.hidden = !KK(); b.textContent = state.links ? '💬 카톡 친구 고르기' : KK_LABEL; } }
+  async function onKk(){
+    if(!state.file || !KK()) return;
+    const b = $('#book-kk');
+    if(!state.links){
+      b.disabled = true; hint(`카톡으로 보낼 수 있게 PDF를 올리는 중이에요… (${SB.keepDays}일 동안 보관)`, true);
+      try{ state.links = await uploadPdf(state.file); }
+      catch(e){ console.warn('[카톡 PDF 링크] 올리기 실패', e); hint('PDF를 서버에 올리지 못했어요(인터넷 확인). 잠시 뒤 💬를 다시 눌러 주세요.'); return; }
+      finally{ b.disabled = false; }
+      showKk(); hint('올렸어요! 💬 카톡 친구 고르기를 누르면 카카오톡 친구 · 대화방을 고를 수 있어요.');
+      return;
+    }
+    const ok = await IslandKakao.sendFeed({ title: `📕 ${bookName()}의 금융 도감 책 (PDF)`,
+      description: `「작은 섬의 영주」에서 만든 금융 도감이에요. 성향 분석과 금융 개념이 담겨 있어요. ${SB.keepDays}일 동안 열 수 있어요.`,
+      buttons: [{ title: 'PDF 열기', url: IslandKakao.pdfUrl(state.links.path) }, { title: '게임 해 보기', url: IslandKakao.url() }] });
+    hint(ok ? '카카오톡 창이 열렸어요. 보낼 친구나 대화방을 고르세요.' : '카카오톡 창을 열지 못했어요. 🔗 링크 복사나 📤 보내기를 써 주세요.');
+  }
+  $('#book-pdf') && $('#book-pdf').insertAdjacentHTML('afterend', `<button class="primary" id="book-kk" type="button" hidden style="background:#FEE500;color:#191919">${KK_LABEL}</button>`);
+  $('#book-kk') && $('#book-kk').addEventListener('click', onKk);
+
   const reset0 = reset;
-  reset = function(){ reset0(); state.links = null;
+  reset = function(){ reset0(); state.links = null; { const b = $('#book-kk'); if(b){ b.hidden = true; b.textContent = KK_LABEL; } }
     if(IN_APP){ ['#book-share', '#book-dl', '#book-kdl', '#book-link', '#book-mail'].forEach(q => { const b = $(q); if(b) b.hidden = true; }); if(!state.busy) hint(HINT_APP); } };
 
   const bind = (id, fn) => { const b = $(id); if(b) b.addEventListener('click', fn); else console.warn('[도감 PDF] 버튼 없음:', id); };

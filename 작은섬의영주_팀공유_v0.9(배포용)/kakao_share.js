@@ -5,6 +5,8 @@
    버튼 두 곳
      · 시작 화면  「💬 카카오톡으로 게임 알려 주기」 — 게임 소개 + 링크
      · 결과 화면  「💬 카카오톡으로 결과 보내기」   — 지금까지의 영주 유형 + 링크 (보호자 · 친구에게)
+     · 도감 책    「💬 카톡으로 PDF 링크 보내기」   — book_share.js가 PDF를 서버에 올리고 IslandKakao.sendFeed로 보냄
+                   [PDF 열기] 버튼 → 게임 폴더의 pdf.html?f=… → 서버 PDF (7일 보관). 카카오 키가 있을 때만 보임
        아이 이름 · 점수 같은 개인 기록은 보내지 않는다. 영주 유형과 생 수만
    보내는 방법 (위에서부터 되는 것)
      ① 카카오 JavaScript SDK (KAKAO_SHARE.jsKey가 있을 때) — 카톡 친구 · 채팅방 고르기 창
@@ -21,7 +23,7 @@
   'use strict';
   const KAKAO_SHARE = {
     jsKey: '679a2de2e896f546f3a1f5629808b474',                       // ← 카카오 개발자 콘솔의 JavaScript 키 (비어 있으면 ②③으로 보냄)
-    gameUrl: 'kaist_final_project/작은섬의영주_팀공유_v0.9(배포용)/작은섬의영주_v0.9.html',                     // 공유할 게임 주소. 비우면 지금 열린 주소의 폴더(index.html)
+    gameUrl: 'https://ashera2-kaist.github.io/kaist_final_project/작은섬의영주_팀공유_v0.9(배포용)/작은섬의영주_v0.9.html',   // 공유할 게임 주소 — https://부터 전체 주소로. 비우면 지금 열린 주소의 폴더(index.html)
     image: 'share_og.png',           // 게임 폴더 안 대표 이미지 (1200×630)
     sdk: 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js',
   };
@@ -29,7 +31,7 @@
 
   /* ── 주소 ── */
   const folderUrl = () => { const u = new URL(location.href); u.search = ''; u.hash = ''; u.pathname = u.pathname.replace(/[^/]*$/, ''); return u.href; };
-  const gameUrl = () => KAKAO_SHARE.gameUrl || folderUrl();
+  const gameUrl = () => new URL(KAKAO_SHARE.gameUrl || folderUrl(), location.href).href;   // 한글 · 괄호가 든 주소도 올바르게 인코딩
   const imageUrl = () => new URL(KAKAO_SHARE.image, gameUrl()).href;
   const webPage = () => /^https?:$/.test(location.protocol);
 
@@ -59,6 +61,22 @@
       description: `${L.good} (${n}번의 생을 모아 본 결과)`, button: '나도 해 보기' };
   }
 
+  /* ── 카카오 메시지 한 장 보내기 — m = { title, description, buttons:[{title, url}] } · 성공하면 true ── */
+  const ready = () => !!KAKAO_SHARE.jsKey && webPage();
+  async function sendFeed(m){
+    if(!ready()) return false;
+    try{
+      const K = await loadSdk();
+      if(!K.isInitialized()) K.init(KAKAO_SHARE.jsKey);
+      const lk = u => ({ mobileWebUrl: u, webUrl: u }), btns = m.buttons && m.buttons.length ? m.buttons : [{ title: '게임 하러 가기', url: gameUrl() }];
+      K.Share.sendDefault({ objectType: 'feed',
+        content: { title: m.title, description: m.description, imageUrl: imageUrl(), imageWidth: 1200, imageHeight: 630, link: lk(btns[0].url) },
+        buttons: btns.slice(0, 2).map(b => ({ title: b.title, link: lk(b.url) })) });
+      return true;
+    }catch(e){ console.warn('[카톡공유] 카카오 공유 실패', e); return false; }
+  }
+  const pdfUrl = path => new URL('pdf.html?f=' + encodeURIComponent(path), gameUrl()).href;
+
   /* ── 보내기 ── */
   function note(msg){ if(typeof toast === 'function') toast(msg); else alert(msg); }
   async function copyLink(url){
@@ -67,17 +85,7 @@
   }
   async function share(kind){
     const m = kind === 'result' ? resultMsg() : inviteMsg(), url = gameUrl();
-    if(KAKAO_SHARE.jsKey && webPage()){
-      try{
-        const K = await loadSdk();
-        if(!K.isInitialized()) K.init(KAKAO_SHARE.jsKey);
-        const link = { mobileWebUrl: url, webUrl: url };
-        K.Share.sendDefault({ objectType: 'feed',
-          content: { title: m.title, description: m.description, imageUrl: imageUrl(), imageWidth: 1200, imageHeight: 630, link },
-          buttons: [{ title: m.button, link }] });
-        return;
-      }catch(e){ console.warn('[카톡공유] 카카오 공유 실패 → 다른 방법으로', e); }
-    }
+    if(await sendFeed({ title: m.title, description: m.description, buttons: [{ title: m.button, url }] })) return;
     if(navigator.share && webPage()){
       try{ await navigator.share({ title: m.title, text: `${m.title}\n${m.description}`, url }); return; }
       catch(e){ if(e && e.name === 'AbortError') return; }
@@ -97,7 +105,7 @@
     b.onclick = () => share(kind); a.insertAdjacentElement('afterend', b); return b;
   }
   const isDemo = () => typeof DEMO !== 'undefined' && !!DEMO;
-  addBtn('btn-kk-invite', '#btn-demo', '💬 카카오톡으로 게임 알려 주기', 'invite');
+  addBtn('btn-kk-invite', '#btn-demo', '💬 카카오톡으로 게임 공유하기', 'invite');
   function endBtn(){ const b = addBtn('btn-kk-result', '#btn-book-end', '💬 카카오톡으로 결과 보내기', 'result'); if(b) b.hidden = isDemo(); }
   if(typeof window.finish === 'function'){
     const orig = window.finish;
@@ -105,5 +113,5 @@
   }
   endBtn();
 
-  window.IslandKakao = { share, config: KAKAO_SHARE, url: gameUrl };
+  window.IslandKakao = { share, sendFeed, ready, pdfUrl, config: KAKAO_SHARE, url: gameUrl };
 })();
