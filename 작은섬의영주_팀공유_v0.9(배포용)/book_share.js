@@ -222,7 +222,7 @@
     hint('PDF를 보낼 수 있게 올리는 중이에요…', true);
     state.links = await uploadPdf(state.file);
     ['#book-kdl', '#book-link', '#book-mail'].forEach(q => { const b = $(q); if(b) b.hidden = false; }); showKk();
-    hint(`준비됐어요! (${r.pages}쪽 · ${mb(r.blob.size)}) ⬇️ PDF 받기로 휴대폰에 저장하거나, 🔗 링크 복사 → 카톡 대화방에 붙여 넣기, ✉️ 메일로 보내기를 누르세요. 링크는 ${SB.keepDays}일 동안 열려요.`);
+    hint(`준비됐어요! (${r.pages}쪽 · ${mb(r.blob.size)}) 💬 카톡으로 결과 공유, ⬇️ PDF 다운으로 휴대폰에 저장, 🔗 파일 링크 복사 → 카톡 대화방에 붙여 넣기, ✉️ 메일로 보내기를 누르세요. 링크는 ${SB.keepDays}일 동안 열려요.`);
   }
   function onKakaoDownload(){ if(!state.links) return; location.href = state.links.download;
     hint(`내려받는 중이에요. 다 받으면 휴대폰 "다운로드" 폴더의 "${state.file.name}"를 카톡이나 메일에 붙여 보낼 수 있어요.`); }
@@ -230,7 +230,7 @@
     hint(ok ? '링크를 복사했어요. 카카오톡 대화방(선생님 · 가족)에 붙여 넣으면 PDF가 열려요.' : '링크를 길게 눌러 복사한 뒤 카카오톡 대화방에 붙여 넣으세요.'); }
   function onMail(){ if(!state.links) return;
     location.href = `mailto:?subject=${encodeURIComponent(`${bookName()}의 금융 도감 (작은 섬의 영주)`)}&body=${encodeURIComponent(shareText())}`;
-    hint('메일 앱이 열리면 받는 사람만 적고 보내세요. 메일 앱이 안 열리면 🔗 링크 복사 → 메일에 붙여 넣기를 해 주세요.'); }
+    hint('메일 앱이 열리면 받는 사람만 적고 보내세요. 메일 앱이 안 열리면 🔗 파일 링크 복사 → 메일에 붙여 넣기를 해 주세요.'); }
   const IN_APP = IN_KAKAO;
   const WEB = /^https?:$/.test(location.protocol);
   const K = { book: typeof BOOK_KEY !== 'undefined' ? BOOK_KEY : 'islandlord_book_v1',
@@ -301,7 +301,7 @@
     try{ await navigator.clipboard.writeText(state.extUrl); hint('주소를 복사했어요. 크롬을 열고 주소창에 붙여 넣으세요.'); }
     catch(e){ prompt('이 주소를 길게 눌러 복사한 뒤 크롬 주소창에 붙여 넣으세요.', state.extUrl); }
   }
-  if(IN_APP){                                    // 카카오톡 안: ⬇️ 🔗 ✉️ (서버 주소) + 예비 🌐 / 📋 버튼을 만들어 넣는다
+  if(IN_APP){                                    // 카카오톡 안: ⬇️ 🔗 ✉️ (서버 주소) 버튼을 만들어 넣는다
     const box = $('.book-actions');
     if(box){
       $('#book-pdf').insertAdjacentHTML('afterend',
@@ -309,7 +309,9 @@
         '<button class="primary" id="book-link" type="button" hidden>🔗 파일 링크 복사</button>' +
         '<button class="secondary" id="book-mail" type="button" hidden>✉️ 메일로 보내기</button>');
       $('#book-kdl').addEventListener('click', onKakaoDownload); $('#book-link').addEventListener('click', onLink); $('#book-mail').addEventListener('click', onMail);
-      $('#book-ext').addEventListener('click', onExternal); $('#book-copy').addEventListener('click', onCopy);
+      /* v0.9: 🌐 크롬에서 열기 · 📋 주소 복사 버튼은 뺐다. 버튼이 없으면 연결을 건너뛴다(없는 버튼에 연결하면 오류로 아래 📄 PDF 만들기까지 멈춤) */
+      const ext = $('#book-ext'), cp = $('#book-copy');
+      if(ext) ext.addEventListener('click', onExternal); if(cp) cp.addEventListener('click', onCopy);
     }
   }
   const HINT_APP = `📄 PDF 만들기를 누르면 책이 PDF로 만들어져 ${SB.keepDays}일 동안 서버에 보관돼요. 그다음 ⬇️ 받기 · 🔗 카톡에 붙여 넣기 · ✉️ 메일로 보낼 수 있어요.`;
@@ -325,13 +327,13 @@
       try{ state.links = await uploadPdf(state.file); }
       catch(e){ console.warn('[카톡 PDF 링크] 올리기 실패', e); hint('PDF를 서버에 올리지 못했어요(인터넷 확인). 잠시 뒤 💬를 다시 눌러 주세요.'); return; }
       finally{ b.disabled = false; }
-      showKk(); hint('올렸어요! 💬 카톡 친구 고르기를 누르면 카카오톡 친구 · 대화방을 고를 수 있어요.');
+      showKk(); hint('올렸어요! 💬 카톡으로 결과 공유를 누르면 카카오톡 친구 · 대화방을 고를 수 있어요.');
       return;
     }
     const ok = await IslandKakao.sendFeed({ title: `📕 ${bookName()}의 금융 도감 책 (PDF)`,
       description: `「작은 섬의 영주」에서 만든 금융 도감이에요. 성향 분석과 금융 개념이 담겨 있어요. ${SB.keepDays}일 동안 열 수 있어요.`,
       buttons: [{ title: 'PDF 열기', url: IslandKakao.pdfUrl(state.links.path) }, { title: '게임 해 보기', url: IslandKakao.url() }] });
-    hint(ok ? '카카오톡 창이 열렸어요. 보낼 친구나 대화방을 고르세요.' : '카카오톡 창을 열지 못했어요. 🔗 링크 복사나 📤 보내기를 써 주세요.');
+    hint(ok ? '카카오톡 창이 열렸어요. 보낼 친구나 대화방을 고르세요.' : '카카오톡 창을 열지 못했어요. 🔗 파일 링크 복사나 📤 보내기를 써 주세요.');
   }
   $('#book-pdf') && $('#book-pdf').insertAdjacentHTML('afterend', `<button class="primary" id="book-kk" type="button" hidden style="background:#FEE500;color:#191919">${KK_LABEL}</button>`);
   $('#book-kk') && $('#book-kk').addEventListener('click', onKk);
