@@ -3,6 +3,13 @@
 ============================================================
  변경 이력 — 눈 떠 보니 섬 영주
 ============================================================
+ v0.9.1 (2026-11-10) — 출발 섬 애니메이션이 건너뛰어지던 문제 수정 (검색어: [v091]) · 게임 로직 · 점수 · DB · 설문은 v0.9와 같음
+  - 원인: 주사위가 멈춘 순간에야 dice_island_v3.html을 불러오기 시작했고(매번 &t=로 캐시도 안 씀),
+      4.5초 비상 타이머가 '불러오기 시작'부터 돌았다 → 느린 망 · 카톡 인앱 브라우저 · 첫 접속에서 애니메이션이 뜨기 전에 결과가 먼저 열림
+  - 주사위 화면이 열릴 때 애니메이션을 미리 불러 둔다(숨긴 채). 주사위가 멈추면 {type:'face'}로 처음부터 다시 재생
+  - 비상 타이머: 불러오기가 끝난 뒤부터 6초 · 끝내 못 불러오면 12초 뒤 결과 공개
+  - &t=Date.now() 캐시 막기 → ?v=0.9.1 (버전이 바뀔 때만 새로 받음)
+  - 효과음 크기 0.55 (팀 공유본 그대로), 파일 이름 · 배포 주소 · 카톡 공유 주소는 v0.9와 같음 → 같은 자리에 덮어쓰면 됨
  v0.9 (2026-11-09) — 💬 카카오톡 공유하기 (검색어: [카톡공유]) · 게임 로직 · 점수 · DB · 설문은 v0.8과 같음
   - kakao_share.js: 시작 화면 「💬 카카오톡으로 게임 알려 주기」, 결과 화면 「💬 카카오톡으로 결과 보내기」(영주 유형 + 게임 링크)
       · 카카오 JavaScript SDK(KAKAO_SHARE.jsKey) → 기기 공유 창 → 링크 복사 순으로 시도
@@ -116,7 +123,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>눈 떠 보니 섬 영주 v0.9</title>
+<title>눈 떠 보니 섬 영주 v0.9.1</title>
 <!-- [카톡공유] 링크 미리보기 (카카오톡 · 메시지). og:image는 올린 뒤 절대 주소로 바꾸면 더 확실함 -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ashera2-kaist.github.io/kaist_final_project/%EC%9E%91%EC%9D%80%EC%84%AC%EC%9D%98%EC%98%81%EC%A3%BC_%ED%8C%80%EA%B3%B5%EC%9C%A0_v0.9(%EB%B0%B0%ED%8F%AC%EC%9A%A9)/">
@@ -498,6 +505,8 @@
   .birth-stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
   .birth-skip{position:absolute;right:6px;bottom:6px;padding:3px 8px;font-size:12px;background:rgba(11,21,38,.75);color:#fff;border:2px solid rgba(255,255,255,.4)}
   .birth-skip[hidden]{display:none}
+  /* [v091] 애니메이션을 불러오는 동안 검은 화면 대신 안내 (불러오면 iframe이 덮음) */
+  .birth-stage::before{content:'🏝️ 섬을 불러오는 중…';position:absolute;inset:0;display:grid;place-items:center;color:#cfd6e4;font-size:14px}
   
   .cats{display:flex;flex-direction:column;gap:10px;margin-top:16px}
   .cat{text-align:left;padding:14px;background:#FFFBEE;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--paper-3);display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;color:var(--ink)}
@@ -794,7 +803,7 @@
   </section>
   <section class="screen" id="s-start">
     <div class="hero">
-      <div class="eyebrow">ISLAND LORD · v0.9</div>
+      <div class="eyebrow">ISLAND LORD · v0.9.1</div>
       <h1>눈 떠 보니, 망한 섬의 영주?</h1>
       <ol class="onboard">
         <li>눈을 떠 보니, 작은 섬의 영주가 되었어요.</li>
@@ -2379,21 +2388,38 @@ function cubeShow(n){ const c=buildCube(); c.classList.remove('tumble'); c.style
   $('#dice').setAttribute('aria-label', n ? `주사위 ${n}` : '주사위'); }
 function showBirth(){
   cubeShow(0); $('#dice').classList.remove('rolling');
-  $('#dice').hidden=false; $('#birth-stage').hidden=true; $('#birth-anim').src='about:blank';
+  $('#dice').hidden=false; $('#birth-stage').hidden=true; birthPreload();   // [v091] about:blank 대신 미리 불러 둔다
   $('#birth-ask').hidden=false; $('#btn-roll').hidden=false; $('#btn-roll').disabled=false; $('#birth-reveal').hidden=true;
   show('s-birth');
 }
-/* 주사위가 멈추면 약 3초 — 태어난 섬을 픽셀 애니메이션으로(dice_island.html). 끝나거나 건너뛰면 결과 공개.
-   주사위 값은 BIRTH.face로 게임이 정해서 넘긴다. 파일을 못 불러와도 4.5초 뒤엔 넘어간다 */
+/* [v091] 주사위가 멈추면 약 3초 — 태어난 섬을 픽셀 애니메이션으로(dice_island_v3.html). 끝나거나 건너뛰면 결과 공개.
+   주사위 값은 BIRTH.face로 게임이 정해서 넘긴다.
+   v0.9까지: 주사위가 멈춘 뒤에야 파일을 불러오기 시작하고, 4.5초 타이머도 그때부터 돌아서 느린 망에선 애니메이션보다 결과가 먼저 열렸다.
+   v0.9.1: ① 주사위 화면이 열릴 때 미리 불러 둔다 ② 주사위가 멈추면 {type:'face'}로 처음부터 다시 튼다
+           ③ 비상 타이머는 불러오기가 끝난 뒤부터 6초, 끝내 못 불러오면 12초 */
+const BIRTH_ANIM_URL = face=>`dice_island_v3.html?embed=1&face=${face}&v=0.9.1`;
+let BIRTH_READY=false;
+function birthPreload(){
+  const f=$('#birth-anim'); if(!f) return;
+  BIRTH_READY=false;
+  f.onload=()=>{ BIRTH_READY = /dice_island_v3\.html/.test(f.getAttribute('src')||''); };
+  f.src=BIRTH_ANIM_URL(BIRTH?BIRTH.face:3);
+}
 function birthAnim(done){
-  const st=$('#birth-stage'), f=$('#birth-anim'), sk=$('#birth-skip'); let fin=false, to=0;
-  const end=()=>{ if(fin) return; fin=true; clearTimeout(to); window.removeEventListener('message',onMsg); sk.hidden=true; done(); };
-  const onMsg=e=>{ const d=e.data; if(d&&d.src==='islandlord-dice'&&d.type==='done') end(); };
+  const st=$('#birth-stage'), f=$('#birth-anim'), sk=$('#birth-skip'); let fin=false, to=0, t0=0;
+  const end=()=>{ if(fin) return; fin=true; clearTimeout(to); window.removeEventListener('message',onMsg); f.onload=null; sk.hidden=true; done(); };
+  // 다시 틀기(play) 전에 온 'done'(미리 불러 둔 재생의 것)은 무시
+  const onMsg=e=>{ const d=e.data; if(d&&d.src==='islandlord-dice'&&d.type==='done' && t0) end(); };
   window.addEventListener('message',onMsg);
   sk.onclick=()=>{ try{ f.contentWindow.postMessage({src:'islandlord',type:'skip'},'*'); }catch(e){} end(); };
   $('#dice').hidden=true; st.hidden=false; sk.hidden=false; fitHero();
-  f.src=`dice_island_v3.html?embed=1&face=${BIRTH.face}&t=${Date.now()}`;
-  to=setTimeout(end,4500);
+  const play=()=>{ if(fin) return; clearTimeout(to); t0=performance.now();
+    try{ f.contentWindow.postMessage({src:'islandlord',type:'face',face:BIRTH.face},'*'); }catch(e){}   // 처음(AT=0)부터 다시
+    to=setTimeout(end,6000); };
+  if(BIRTH_READY) play();
+  else { f.onload=()=>{ BIRTH_READY=true; play(); };
+    if(!/dice_island_v3\.html/.test(f.getAttribute('src')||'')) f.src=BIRTH_ANIM_URL(BIRTH.face);
+    to=setTimeout(end,12000); }
 }
 function rollDice(){
   const d=$('#dice'); $('#btn-roll').disabled=true;
@@ -3457,7 +3483,7 @@ $('#btn-codex').onclick=()=>openCodex();
 <script src="book_share.js"></script>
 <!-- [DB] v0.8 플레이 데이터 → Supabase (play_sessions · play_choices · play_surveys). 테이블: db/schema_v2_dims4_survey.sql
      게임 함수를 감싸서 기록하므로 게임 <script>보다 뒤에 둔다. 주소에 ?nodb=1 이면 보내지 않음 -->
-<script src="db/islandlord_db.js" data-game-version="0.9"></script>
+<script src="db/islandlord_db.js" data-game-version="0.9.1"></script>
 <!-- [설문] v0.8 게임 뒤 설문 팝업 (설문팝업샘플_v1.0 기준). DB 모듈보다 뒤에 둔다 -->
 <script src="survey_popup.js"></script>
 <!-- [카톡공유] v0.9 카카오톡 공유하기. 카카오 JavaScript 키는 kakao_share.js 맨 위 KAKAO_SHARE.jsKey -->
