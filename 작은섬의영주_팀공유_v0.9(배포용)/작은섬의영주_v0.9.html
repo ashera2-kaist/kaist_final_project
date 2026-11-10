@@ -2694,7 +2694,7 @@ function bootScreen(){
    · 🔊 버튼으로 끄고 켜기(이 브라우저에 기억). 첫 클릭 전에는 소리를 만들지 않는다(브라우저 자동재생 규칙)
    ============================================================ */
 const SND_KEY='islandlord_sound';
-const SND = { ctx:null, master:null, on:true, vol:0.32 };
+const SND = { ctx:null, master:null, on:true, vol:0.55 };
 try{ SND.on = localStorage.getItem(SND_KEY)!=='off'; }catch(e){}
 const NOTE = n=>{ // 'C5' · 'F#4' · 'Bb3' → Hz
   const m=/^([A-G])([#b]?)(\d)$/.exec(n); if(!m) return 0;
