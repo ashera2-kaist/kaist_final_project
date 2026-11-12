@@ -3,6 +3,12 @@
 ============================================================
  변경 이력 — 눈 떠 보니 섬 영주
 ============================================================
+ v0.9.2 (2026-11-11) — 기기 '동작 줄이기'가 켜져 있어도 주사위 · 섬 애니메이션을 보여 줌 (검색어: [v092]) · 게임 로직 변경 없음
+  - 원인: 폰의 동작 줄이기(아이폰 손쉬운 사용 · 안드로이드 애니메이션 제거, 절전 모드에서 같이 켜지기도 함)가 켜지면
+      주사위 굴림(0초) · 출발 섬 애니메이션(바로 끝 장면) · 건물 떨어지기(바로 놓임)를 모두 건너뛰었다
+  - 이제 연출은 그대로 보여 주고, 흔들림 · 번개 번쩍임만 계속 끈다 (dice_island_v3.html · scene_v3.html의 RM)
+  - 예전처럼 전부 멈춘 화면이 필요하면 주소 끝에 ?still (게임 · 두 장면 파일 모두)
+  - 장면 파일이 바뀌었으므로 iframe 주소에 ?v=0.9.2 (캐시된 옛 파일을 쓰지 않게)
  v0.9.1 (2026-11-10) — 출발 섬 애니메이션이 건너뛰어지던 문제 수정 (검색어: [v091]) · 게임 로직 · 점수 · DB · 설문은 v0.9와 같음
   - 원인: 주사위가 멈춘 순간에야 dice_island_v3.html을 불러오기 시작했고(매번 &t=로 캐시도 안 씀),
       4.5초 비상 타이머가 '불러오기 시작'부터 돌았다 → 느린 망 · 카톡 인앱 브라우저 · 첫 접속에서 애니메이션이 뜨기 전에 결과가 먼저 열림
@@ -123,7 +129,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>눈 떠 보니 섬 영주 v0.9.1</title>
+<title>눈 떠 보니 섬 영주 v0.9.2</title>
 <!-- [카톡공유] 링크 미리보기 (카카오톡 · 메시지). og:image는 올린 뒤 절대 주소로 바꾸면 더 확실함 -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://ashera2-kaist.github.io/kaist_final_project/%EC%9E%91%EC%9D%80%EC%84%AC%EC%9D%98%EC%98%81%EC%A3%BC_%ED%8C%80%EA%B3%B5%EC%9C%A0_v0.9(%EB%B0%B0%ED%8F%AC%EC%9A%A9)/">
@@ -803,7 +809,7 @@
   </section>
   <section class="screen" id="s-start">
     <div class="hero">
-      <div class="eyebrow">ISLAND LORD · v0.9.1</div>
+      <div class="eyebrow">ISLAND LORD · v0.9.2</div>
       <h1>눈 떠 보니, 망한 섬의 영주?</h1>
       <ol class="onboard">
         <li>눈을 떠 보니, 작은 섬의 영주가 되었어요.</li>
@@ -870,7 +876,7 @@
     <!-- v0.6.7 섬 무대 — 플레이 내내 같은 자리·같은 크기. 장면 그림은 scene_v2.html -->
     <div class="vn-stage" id="vn-stage">
       <div class="vn-scene-wrap">
-        <iframe id="vn-scene" src="scene_v3.html?embed=1" title="섬 장면" tabindex="-1" aria-hidden="true"></iframe>
+        <iframe id="vn-scene" src="scene_v3.html?embed=1&v=0.9.2" title="섬 장면" tabindex="-1" aria-hidden="true"></iframe>
         <div class="label" id="vn-label"></div>
         <div class="scene-name" id="vn-title"></div>
         <div class="vn-chip" id="vn-chip" hidden></div>
@@ -1939,6 +1945,8 @@ function sceneSync(){
     built:[...S.built], famine:!!(S.flags&&S.flags.drought), voyage:S.lockLeft>0&&SCENE_VOYAGE, reset,
     face:S.birth&&S.birth.face||3},'*'); }catch(e){}   // v0.6.9.2 face = 출신 섬 모양 (scene_v3.html)
 }
+const STILL_ALL=/[?&]still\b/.test(location.search), STILL_Q=STILL_ALL?'&still=1':'';   // [v092]
+if(STILL_ALL){ const sf=$('#vn-scene'); if(sf) sf.src+='&still=1'; }   // [v092]
 $('#vn-scene').addEventListener('load',()=>{ SCENE_FOR=null; sceneSync(); });
 window.addEventListener('message',e=>{ const d=e.data; if(d&&d.src==='islandlord-scene'&&d.type==='landed') sfx('land'); });
 function vnChip(html){ const c=$('#vn-chip'); if(!c) return; c.innerHTML=html||''; c.hidden=!html; }
@@ -2397,7 +2405,7 @@ function showBirth(){
    v0.9까지: 주사위가 멈춘 뒤에야 파일을 불러오기 시작하고, 4.5초 타이머도 그때부터 돌아서 느린 망에선 애니메이션보다 결과가 먼저 열렸다.
    v0.9.1: ① 주사위 화면이 열릴 때 미리 불러 둔다 ② 주사위가 멈추면 {type:'face'}로 처음부터 다시 튼다
            ③ 비상 타이머는 불러오기가 끝난 뒤부터 6초, 끝내 못 불러오면 12초 */
-const BIRTH_ANIM_URL = face=>`dice_island_v3.html?embed=1&face=${face}&v=0.9.1`;
+const BIRTH_ANIM_URL = face=>`dice_island_v3.html?embed=1&face=${face}&v=0.9.2${STILL_Q}`;
 let BIRTH_READY=false;
 function birthPreload(){
   const f=$('#birth-anim'); if(!f) return;
@@ -2423,7 +2431,7 @@ function birthAnim(done){
 }
 function rollDice(){
   const d=$('#dice'); $('#btn-roll').disabled=true;
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = STILL_ALL;   // [v092] 기기 동작 줄이기와 상관없이 굴린다 (?still 일 때만 정지)
   const c=buildCube(); if(!still){ c.style.transform=''; c.classList.add('tumble'); }
   setTimeout(()=>{ c.classList.remove('tumble'); birthAnim(revealBirth); }, still?0:1000);
 }
@@ -2880,7 +2888,7 @@ function sndButton(){
     if(/완성$/.test(title)) sfx('build'); else if(BETS.some(b=>title.indexOf(b.name)>=0)) sfx('clock'); else if(title==='조용한 봄') sfx('rest');
     return r; };
   // 주사위
-  const _rollDice=rollDice; rollDice=function(){ const still=matchMedia('(prefers-reduced-motion: reduce)').matches; if(!still) for(let i=0;i<9;i++) setTimeout(()=>sfx('diceTick'),i*100); return _rollDice.apply(this,arguments); };
+  const _rollDice=rollDice; rollDice=function(){ const still=STILL_ALL; if(!still) for(let i=0;i<9;i++) setTimeout(()=>sfx('diceTick'),i*100); return _rollDice.apply(this,arguments); };
   const _reveal=revealBirth; revealBirth=function(){ const r=_reveal.apply(this,arguments); sfx('diceLand'); return r; };
   // 순찰 · 필살기 — 결과 알림(toast) 문구로 구분
   const _patrolBar=patrolBar; patrolBar=function(){ sfx('patrolStart'); return _patrolBar.apply(this,arguments); };
@@ -3483,7 +3491,7 @@ $('#btn-codex').onclick=()=>openCodex();
 <script src="book_share.js"></script>
 <!-- [DB] v0.8 플레이 데이터 → Supabase (play_sessions · play_choices · play_surveys). 테이블: db/schema_v2_dims4_survey.sql
      게임 함수를 감싸서 기록하므로 게임 <script>보다 뒤에 둔다. 주소에 ?nodb=1 이면 보내지 않음 -->
-<script src="db/islandlord_db.js" data-game-version="0.9.1"></script>
+<script src="db/islandlord_db.js" data-game-version="0.9.2"></script>
 <!-- [설문] v0.8 게임 뒤 설문 팝업 (설문팝업샘플_v1.0 기준). DB 모듈보다 뒤에 둔다 -->
 <script src="survey_popup.js"></script>
 <!-- [카톡공유] v0.9 카카오톡 공유하기. 카카오 JavaScript 키는 kakao_share.js 맨 위 KAKAO_SHARE.jsKey -->
