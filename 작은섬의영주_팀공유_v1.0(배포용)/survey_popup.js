@@ -1,5 +1,5 @@
 /* ============================================================
-   작은 섬의 영주 v1.0 — 게임 뒤 설문 팝업 (기준: 설문팝업샘플_v1.0.html · 문항 v2.2 = v2.1 + 나이, 13문항 + 자유 의견)
+   작은 섬의 영주 v1.0 — 게임 뒤 설문 팝업 (기준: 설문팝업샘플_v1.0.html · 문항 v2.3 = v2.1 + 나이(직접 입력), 13문항 + 자유 의견)
    ------------------------------------------------------------
    불러오는 곳: 작은섬의영주_v1.0.html 맨 아래 <script src="survey_popup.js"> (db/islandlord_db.js보다 뒤)
    언제 뜨나 (2026-11-17 변경: 결과 화면 1.5초 자동 팝업은 없앰 — 결과 · 위인카드를 다 본 뒤에 묻는다)
@@ -13,13 +13,13 @@
      · 자동은 한 번만: 거절 · 완료하면 다시 자동으로 뜨지 않음
      · 버튼: 결과 화면의 「📝 설문 참여하기」 — 첫 생부터 보이고, 완료하면 사라짐       'button'
      · 시연 모드에서는 뜨지 않음. 주소에 ?survey=1 → 생이 끝날 때마다 1.5초 뒤(테스트용)  'test'
-   나이: 첫 문항(만 나이, 7살 이하 ~ 13살 이상). 건너뛰면 null → play_surveys.age (db/schema_v2_dims4_survey.sql의 v0.9 칸)
+   나이: 첫 문항, 숫자로 직접 적기(정수, 범위 제한 없음 — 어른도 참여, 문항 v2.3). 건너뛰면 null → play_surveys.age (정수 칸)
    저장: IslandDB.saveSurvey(payload) → Supabase play_surveys (db/schema_v2_dims4_survey.sql)
          참여 여부는 이 브라우저(localStorage 'islandlord_survey_v1')에도 남김
    ============================================================ */
 (function(){
   'use strict';
-  const SURVEY = { version: 'v2.2', legendDelayMs: 1000, lives5: 5, lives5DelayMs: 3000, testDelayMs: 1500, key: 'islandlord_survey_v1' };
+  const SURVEY = { version: 'v2.3', legendDelayMs: 1000, lives5: 5, lives5DelayMs: 3000, testDelayMs: 1500, key: 'islandlord_survey_v1' };
   const Q = new URLSearchParams(location.search), FORCE = Q.get('survey') === '1';
   const $ = s => document.querySelector(s);
   const store = {
@@ -30,8 +30,7 @@
   /* ── 문항 (샘플 v2.1 그대로) ── */
   const AGREE = [['😶','아니에요'],['🙂','조금 그래요'],['😊','꽤 그래요'],['😆','정말 그래요']];
   const QUESTIONS = [
-    {id:'age', type:'single', text:'몇 살이에요?', hint:'만 나이로 골라 주세요. 잘 모르겠으면 건너뛰어도 괜찮아요.',
-      opts:[['','7살 이하'],['','8살'],['','9살'],['','10살'],['','11살'],['','12살'],['','13살 이상']], vals:[7,8,9,10,11,12,13]},
+    {id:'age', type:'num', text:'몇 살이에요?', hint:'만 나이를 숫자로 적어 주세요. 어른도 괜찮아요. 적고 싶지 않으면 건너뛰어도 돼요.', unit:'살'},
     {id:'q1', type:'prepost', text:'돈을 쓰기 전에 한 번 더 생각해 봐요', dim:'의사결정'},
     {id:'q2', type:'prepost', text:'갖고 싶은 게 있어도 나중을 위해 참을 수 있어요', dim:'시간'},
     {id:'q3', type:'prepost', text:'혹시 모를 일에 대비해 조금 남겨 두고 싶어요', dim:'예비저축'},
@@ -96,6 +95,9 @@
   .svy-scrim textarea{width:100%;min-height:96px;border:2px solid var(--line);border-radius:14px;background:var(--chip);padding:12px;font:inherit;color:var(--ink);resize:vertical}
   .svy-center{text-align:center;justify-items:center}
   .svy-big{font-size:54px;line-height:1}
+  .svy-num{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:22px;color:var(--ink)}
+  .svy-scrim .svy-num input{width:110px;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:var(--chip);font:inherit;font-size:24px;color:var(--ink);text-align:center}
+  .svy-scrim .svy-num input:focus{outline:3px solid var(--sun);outline-offset:2px;border-color:var(--leaf)}
   #btn-survey-end{margin-top:10px}
   #btn-survey-end[hidden]{display:none}`;
   document.head.appendChild(css);
@@ -131,7 +133,9 @@
       `<button class="svy-opt" type="button" data-q="${qid}" data-row="${row || ''}" data-v="${i + 1}" aria-pressed="${cur === i + 1}">
          <span class="e" aria-hidden="true">${o[0]}</span><span class="t">${o[1]}</span></button>`).join('') + '</div>';
   }
-  const answered = q => q.type === 'prepost' ? !!((ans[q.id] || {}).before && (ans[q.id] || {}).now) : q.type === 'single' ? !!ans[q.id] : true;
+  const numOk = (q, v) => Number.isInteger(v) && v >= 0;      // 나이: 범위 제한 없이 정수면 받음 (어른도 참여)
+  const answered = q => q.type === 'prepost' ? !!((ans[q.id] || {}).before && (ans[q.id] || {}).now) : q.type === 'single' ? !!ans[q.id]
+    : q.type === 'num' ? numOk(q, ans[q.id]) : true;
 
   function render(){
     if(idx === -1){
@@ -158,6 +162,10 @@
           <div class="svy-lbl now"><b>지금의 나</b></div>${optBtns(q.id, 'now', AGREE)}</div>`;
     } else if(q.type === 'single'){
       body = `<h2 class="svy-q" id="svy-qtitle">${q.text}</h2>${q.hint ? `<p class="svy-hint">${q.hint}</p>` : ''}${optBtns(q.id, null, q.opts)}`;
+    } else if(q.type === 'num'){                          // 나이: 숫자로 직접 적기 (휴대폰은 숫자 키패드)
+      body = `<h2 class="svy-q" id="svy-qtitle">${q.text}</h2><p class="svy-hint">${q.hint}</p>
+        <label class="svy-num"><input id="svy-num" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-labelledby="svy-qtitle"
+          placeholder="예) 11" value="${ans[q.id] ?? ''}"><span>${q.unit}</span></label>`;
     } else {
       body = `<h2 class="svy-q" id="svy-qtitle">${q.text}</h2>
         <p class="svy-hint">없으면 그냥 보내도 돼요. 이름이나 전화번호는 적지 말아 주세요.</p>
@@ -173,6 +181,16 @@
     pop.querySelectorAll('.svy-opt').forEach(b => b.onclick = () => pick(b));
     pop.querySelector('#svy-back').onclick = () => { clearTimeout(advanceTimer); idx--; render(); };
     pop.querySelector('#svy-next').onclick = () => { clearTimeout(advanceTimer); if(isLast) ans.comment = pop.querySelector('#svy-cm').value.trim(); idx++; render(); };
+    if(q.type === 'num'){
+      const inp = pop.querySelector('#svy-num'), nx = pop.querySelector('#svy-next');
+      inp.oninput = () => {
+        inp.value = inp.value.replace(/[^0-9]/g, '');
+        const v = inp.value === '' ? null : parseInt(inp.value, 10);
+        ans[q.id] = v; nx.disabled = !numOk(q, v);
+      };
+      inp.onkeydown = e => { if(e.key === 'Enter' && !nx.disabled) nx.click(); };
+      inp.focus();
+    }
     const sk = pop.querySelector('#svy-skip');
     if(sk) sk.onclick = () => { clearTimeout(advanceTimer); ans[q.id] = q.type === 'prepost' ? { before: null, now: null, skipped: true } : null; idx++; render(); };
   }
@@ -193,7 +211,8 @@
       if(q.type === 'text') return;
       const a = ans[q.id];
       if(q.type === 'prepost'){ const before = a && a.before || null, now = a && a.now || null; answers[q.id] = { before, now, diff: before && now ? now - before : null }; }
-      else answers[q.id] = a == null ? null : q.vals ? q.vals[a - 1] : a;     // 나이: 고른 칸 → 실제 나이
+      else if(q.type === 'num') answers[q.id] = numOk(q, a) ? a : null;         // 나이: 빈칸이면 null
+      else answers[q.id] = a == null ? null : q.vals ? q.vals[a - 1] : a;
     });
     const L = lordNow();
     return { play_id: (window.IslandDB && IslandDB.lastPlayId()) || null, lord_type: L.name, lord_id: L.id,
