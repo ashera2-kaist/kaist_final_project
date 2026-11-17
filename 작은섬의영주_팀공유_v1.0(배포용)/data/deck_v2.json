@@ -1,0 +1,121 @@
+{
+ "name": "v0.3.1 기본 덱",
+ "note": "게임이 실제로 뽑는 카드 목록. 은행(cards_core/cards_cardco)에 있는 id를 넣고 빼면 된다. \"all\"만 넣으면 은행 전체.",
+ "cards": [
+  "v3trade",
+  "v3seed",
+  "v3drought",
+  "v3carriage",
+  "v3guild",
+  "v3neighbor",
+  "v3fisher",
+  "v3flood",
+  "sav01",
+  "sav03",
+  "cmp01",
+  "cmp02",
+  "cmp05",
+  "ins01",
+  "ins05",
+  "ins08",
+  "div01",
+  "div02",
+  "crd03",
+  "crd06",
+  "ins_a02",
+  "due02",
+  "lim02",
+  "ovd02",
+  "opp02",
+  "nw03",
+  "bud04",
+  "inc03",
+  "liq04",
+  "scm02",
+  "con02",
+  "inf01",
+  "tax02",
+  "grt01",
+  "shr01",
+  "cor01",
+  "cc01",
+  "cc02",
+  "cc05",
+  "cc07",
+  "cc10",
+  "cc16",
+  "cc21",
+  "cpr02",
+  "inf_i02"
+ ],
+ "demo": {
+  "name": "시연 5분 (2년·고정)",
+  "years": 2,
+  "cardsPerSummer": 2,
+  "heroes": [
+   "sejong",
+   "leo",
+   "shake"
+  ],
+  "winters": [
+   {
+    "forecast": "storm",
+    "real": "storm"
+   },
+   {
+    "forecast": "calm",
+    "real": "plague"
+   }
+  ],
+  "cards": [
+   [
+    "v3seed",
+    "cc01"
+   ],
+   [
+    "v3trade",
+    "cc07"
+   ]
+  ],
+  "risk": {
+   "v3trade": false
+  }
+ },
+ "demo04": {
+  "name": "v0.4 시연 (한 생·2년·고정)",
+  "years": 2,
+  "cardsPerSummer": 2,
+  "heroes": [
+   "sejong",
+   "leo",
+   "shake"
+  ],
+  "birth": "plain",
+  "winters": [
+   {
+    "forecast": "storm",
+    "real": "storm"
+   },
+   {
+    "forecast": "calm",
+    "real": "plague"
+   }
+  ],
+  "cards": [
+   [
+    "v3guild",
+    "cc16"
+   ],
+   [
+    "v3seed",
+    "cc01"
+   ]
+  ],
+  "risk": {},
+  "bets": {
+   "ship": true,
+   "vault": true,
+   "treasure": false
+  }
+ }
+}
